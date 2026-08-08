@@ -175,6 +175,16 @@
     }
   }
   </script>
+  <script>
+    // 內聯兜底:DOM 就緒後若主模組尚未隱藏載入指示器,主動隱藏
+    function fallbackHide() {
+      const el = document.getElementById('loading-indicator');
+      if (el) el.classList.add('hidden');
+    }
+    document.addEventListener('DOMContentLoaded', fallbackHide);
+    window.addEventListener('load', fallbackHide);
+    setTimeout(fallbackHide, 1500);
+  </script>
   <script type="module" src="js/main.js?v=20260808"></script>
 </body>
 </html>
