@@ -1,0 +1,1124 @@
+/* ==========================================
+   Anpu's Digital Archive · 安溥的數字藏館
+   Design v3 — Multi-stage Flow
+   ========================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-dark: #0d0a08;
+  --bg-card: #1a1410;
+  --cream: #f4e8d8;
+  --cream-dim: rgba(244, 232, 216, 0.6);
+  --gold: #b88a4d;
+  --gold-bright: #d4a75c;
+  --bead-yellow: #ffd84a;
+  --bead-orange: #ff9d3a;
+  --bead-deep: #c97a2e;
+  --line-color: rgba(180, 130, 60, 0.6);
+  --overlay: rgba(13, 10, 8, 0.94);
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@font-face {
+  font-family: 'Noto Serif TC';
+  font-display: swap;
+  src: local('Noto Serif TC'), local('Songti TC'), local('STSong');
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-dark);
+  font-family: "Noto Serif TC", "Songti TC", "STSong", serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+  color: var(--cream);
+}
+
+/* ---------- Stage system ---------- */
+.stage {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 1.2s var(--ease), visibility 1.2s var(--ease);
+}
+
+.stage.stage-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.blackout {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 1500;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.blackout.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* ==========================================
+   STAGE 1: 珠簾
+   ========================================== */
+#curtain-stage {
+  z-index: 1000;
+  background: #050810;
+}
+
+#curtain-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+#curtain-canvas:active { cursor: grabbing; }
+
+#curtain-hint {
+  position: absolute;
+  bottom: 10vh;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 220, 130, 0.85);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  font-weight: 300;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  animation: hint-fadein 1s ease 0.5s forwards, hint-pulse 2.5s ease-in-out 1.5s infinite;
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes hint-fadein {
+  to { opacity: 1; }
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ==========================================
+   STAGE 2: 照片歡迎頁
+   ========================================== */
+#welcome-stage {
+  z-index: 800;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#welcome-photo-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#welcome-photo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  filter: brightness(0.85) contrast(1.05);
+  animation: photo-zoom 20s ease-in-out infinite alternate;
+}
+
+@keyframes photo-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+#welcome-photo-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--cream-dim);
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  background: radial-gradient(ellipse at center 60%, #1a1410, #0a0807);
+  padding: 40px 20px;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.ph-icon {
+  color: var(--gold-bright);
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.ph-line { font-size: 13px; line-height: 1.6; }
+.ph-title {
+  color: var(--cream);
+  font-size: 16px;
+  letter-spacing: 0.2em;
+  margin-bottom: 4px;
+}
+
+.ph-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.ph-codes code,
+.ph-line code.inline {
+  font-family: 'Inter', monospace;
+  color: var(--gold-bright);
+  background: rgba(255, 220, 130, 0.08);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 220, 130, 0.2);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.ph-tip {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--gold);
+  opacity: 0.85;
+  letter-spacing: 0.1em;
+  padding: 8px 14px;
+  border-top: 1px solid rgba(255, 220, 130, 0.15);
+  max-width: 80%;
+}
+
+.welcome-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+#globe-hint {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(60, 50, 40, 0.6);
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  font-weight: 300;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  white-space: nowrap;
+}
+
+#globe-stage.stage-active #globe-hint {
+  opacity: 1;
+  animation: hint-fadeout 1s ease 6s forwards;
+}
+
+#globe-hint .dot {
+  opacity: 0.4;
+}
+
+@keyframes hint-fadeout {
+  to { opacity: 0; }
+}
+
+#add-button-tooltip {
+  position: fixed;
+  bottom: 38px;
+  right: 100px;
+  z-index: 51;
+  background: rgba(20, 16, 12, 0.85);
+  color: var(--cream);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  padding: 6px 12px;
+  border-radius: 16px;
+  pointer-events: none;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 220, 130, 0.15);
+  opacity: 0;
+  transform: translateX(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#globe-stage.stage-active #add-button-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+  animation: tooltip-fadeout 1s ease 5s forwards;
+}
+
+@keyframes tooltip-fadeout {
+  to { opacity: 0; transform: translateX(8px); }
+}
+
+#welcome-text-wrap {
+  position: absolute;
+  bottom: 8%;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: 32px;
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+}
+
+#welcome-text-wrap #enter-gate {
+  pointer-events: auto;
+}
+
+#welcome-text {
+  font-size: clamp(20px, 4.5vw, 32px);
+  font-weight: 400;
+  color: var(--cream);
+  letter-spacing: 0.15em;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1.5s ease 0.3s, transform 1.5s ease 0.3s;
+}
+
+#welcome-stage.stage-active #welcome-text {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#enter-gate {
+  background: none;
+  border: none;
+  color: var(--cream);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 12px 20px;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1.5s ease 1.2s, transform 1.5s ease 1.2s, color 0.3s;
+  position: relative;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+#welcome-stage.stage-active #enter-gate {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#enter-gate:hover {
+  color: var(--gold-bright);
+}
+
+#enter-gate::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.6s ease;
+}
+
+#welcome-stage.stage-active #enter-gate::after {
+  width: 36px;
+  transition: width 0.8s ease 2s;
+}
+
+/* ==========================================
+   STAGE 3: 3D 球體主場景
+   ========================================== */
+#globe-stage {
+  z-index: 600;
+  background: linear-gradient(180deg, #f5f1ea 0%, #e8e2d4 50%, #d8d0bf 100%);
+}
+
+#globe-container {
+  position: absolute;
+  inset: 0;
+}
+
+#add-button {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 50;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #1a1410;
+  color: var(--cream);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#add-button:hover {
+  transform: scale(1.08);
+  background: #2a211b;
+}
+
+#add-button:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================
+   MODAL: 通用
+   ========================================== */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.modal.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+}
+
+/* ==========================================
+   PHOTO MODAL: 寶麗來風格
+   ========================================== */
+#photo-modal {
+  align-items: center;
+  justify-content: center;
+}
+
+.polaroid {
+  position: relative;
+  z-index: 1;
+  background: #faf8f3;
+  padding: 18px 18px 50px;
+  max-width: 90vw;
+  max-height: 85vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: scale(0.8) rotate(-2deg);
+  opacity: 0;
+  transition: transform 0.5s var(--ease-out), opacity 0.5s ease;
+}
+
+#photo-modal.active .polaroid {
+  transform: scale(1) rotate(-2deg);
+  opacity: 1;
+}
+
+.polaroid-close {
+  position: absolute;
+  top: -40px;
+  right: -10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--cream);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.polaroid-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.polaroid-photo {
+  width: 70vw;
+  max-width: 480px;
+  aspect-ratio: 1 / 1;
+  background: #000;
+  overflow: hidden;
+  position: relative;
+}
+
+#photo-modal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.polaroid-caption {
+  text-align: center;
+  margin-top: 14px;
+  color: #4a4036;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  font-family: 'Inter', sans-serif;
+  min-height: 18px;
+}
+
+.polaroid-like {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #ff3859;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  -webkit-tap-highlight-color: transparent;
+  padding: 8px;
+}
+
+.polaroid-like .heart {
+  transition: transform 0.2s;
+}
+
+.polaroid-like:active .heart {
+  transform: scale(1.3);
+}
+
+#like-count {
+  font-size: 12px;
+  color: var(--cream-dim);
+  font-family: 'Inter', sans-serif;
+}
+
+.polaroid-tools {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  gap: 16px;
+}
+
+.tool-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(20, 16, 12, 0.6);
+  border: none;
+  color: var(--cream);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  backdrop-filter: blur(4px);
+}
+
+.tool-btn:hover {
+  background: rgba(40, 30, 24, 0.8);
+}
+
+.tool-btn:active {
+  transform: scale(0.9);
+}
+
+/* ==========================================
+   QUOTE MODAL
+   ========================================== */
+#quote-modal .quote-content {
+  position: relative;
+  z-index: 1;
+  background: rgba(20, 16, 12, 0.95);
+  padding: 50px 40px;
+  max-width: 520px;
+  text-align: center;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 220, 130, 0.1);
+  transform: scale(0.85);
+  opacity: 0;
+  transition: transform 0.5s var(--ease-out), opacity 0.5s ease;
+}
+
+#quote-modal.active .quote-content {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.quote-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#quote-modal-text {
+  font-size: clamp(20px, 4vw, 26px);
+  color: var(--cream);
+  line-height: 1.8;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  white-space: pre-line;
+  margin-bottom: 28px;
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+#audio-play-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gold-bright);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 220, 130, 0.3);
+  border-radius: 24px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+#audio-play-btn:hover {
+  background: rgba(255, 220, 130, 0.08);
+}
+
+#audio-play-btn:active {
+  transform: scale(0.95);
+}
+
+#audio-play-btn .play-icon {
+  width: 0;
+  height: 0;
+  border-left: 12px solid currentColor;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+}
+
+#audio-play-btn .pause-icon {
+  display: none;
+  gap: 3px;
+}
+
+#audio-play-btn .pause-icon span {
+  display: block;
+  width: 3px;
+  height: 14px;
+  background: currentColor;
+}
+
+#audio-play-btn.playing .play-icon { display: none; }
+#audio-play-btn.playing .pause-icon { display: flex; }
+
+.audio-status {
+  font-size: 12px;
+  color: var(--cream-dim);
+  font-family: 'Inter', sans-serif;
+}
+
+/* ==========================================
+   UPLOAD PANEL
+   ========================================== */
+.upload-panel {
+  position: relative;
+  z-index: 1;
+  background: #1a1410;
+  width: 90vw;
+  max-width: 540px;
+  max-height: 85vh;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 220, 130, 0.12);
+  padding: 32px 28px;
+  overflow-y: auto;
+  transform: scale(0.9);
+  opacity: 0;
+  transition: transform 0.4s var(--ease-out), opacity 0.4s ease;
+}
+
+#upload-modal.active .upload-panel {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.upload-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.upload-panel h2 {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--cream);
+  margin-bottom: 20px;
+  letter-spacing: 0.1em;
+}
+
+.upload-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 220, 130, 0.15);
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--cream-dim);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  padding: 10px 18px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-btn.active {
+  color: var(--gold-bright);
+  border-bottom-color: var(--gold-bright);
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.tab-pane .hint {
+  color: var(--cream-dim);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.upload-drop {
+  border: 1.5px dashed rgba(255, 220, 130, 0.25);
+  border-radius: 4px;
+  padding: 30px 20px;
+  text-align: center;
+  color: var(--cream-dim);
+  font-size: 13px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.upload-drop:hover, .upload-drop.dragover {
+  background: rgba(255, 220, 130, 0.04);
+  border-color: var(--gold-bright);
+}
+
+.upload-drop svg {
+  color: var(--gold-bright);
+  margin-bottom: 8px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#photo-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.upload-preview .preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #2a211b;
+}
+
+.upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.upload-preview .remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.upload-preview .set-welcome {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--gold-bright);
+  border: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.upload-preview .set-welcome:hover {
+  background: rgba(255, 220, 130, 0.2);
+  color: var(--cream);
+}
+
+#text-input {
+  width: 100%;
+  min-height: 120px;
+  background: #0d0a08;
+  border: 1px solid rgba(255, 220, 130, 0.2);
+  border-radius: 4px;
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.7;
+  padding: 14px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#text-input:focus {
+  border-color: var(--gold-bright);
+}
+
+.text-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.rec-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+#rec-timer {
+  font-family: 'Inter', monospace;
+  font-size: 14px;
+  color: var(--cream-dim);
+}
+
+.ghost-btn, .primary-btn {
+  background: none;
+  border: 1px solid rgba(255, 220, 130, 0.3);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  padding: 8px 16px;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ghost-btn:hover {
+  background: rgba(255, 220, 130, 0.06);
+  border-color: var(--gold-bright);
+}
+
+.primary-btn {
+  background: var(--gold);
+  color: #1a120f;
+  border-color: var(--gold);
+  font-weight: 500;
+}
+
+.primary-btn:hover {
+  background: var(--gold-bright);
+  border-color: var(--gold-bright);
+}
+
+.primary-btn:disabled {
+  background: #3a3028;
+  border-color: #3a3028;
+  color: var(--cream-dim);
+  cursor: not-allowed;
+}
+
+.rec-btn {
+  background: none;
+  border: 1px solid rgba(255, 220, 130, 0.3);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  padding: 10px 18px;
+  border-radius: 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rec-btn:hover {
+  background: rgba(255, 220, 130, 0.06);
+}
+
+.rec-btn.recording {
+  background: rgba(255, 56, 89, 0.1);
+  border-color: #ff3859;
+  color: #ff3859;
+}
+
+.rec-btn.recording .rec-dot {
+  background: #ff3859;
+  animation: rec-pulse 1s ease-in-out infinite;
+}
+
+.rec-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3859;
+  display: inline-block;
+}
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.6); }
+}
+
+.rec-state {
+  font-size: 12px;
+  color: var(--cream-dim);
+  font-family: 'Inter', sans-serif;
+}
+
+.manage-row {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 220, 130, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.storage-info {
+  font-size: 11px;
+  color: var(--cream-dim);
+  font-family: 'Inter', sans-serif;
+  margin-left: auto;
+}
+
+#rec-playback {
+  width: 100%;
+  margin: 12px 0;
+}
+
+/* ==========================================
+   FOOTER
+   ========================================== */
+#site-footer {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+#site-footer p {
+  font-size: 10px;
+  color: rgba(60, 50, 40, 0.6);
+  letter-spacing: 0.2em;
+}
+
+/* ==========================================
+   Loading
+   ========================================== */
+#loading-indicator {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #050810;
+  transition: opacity 0.6s;
+}
+
+#loading-indicator.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffd84a;
+  margin: 0 5px;
+  animation: loading-bounce 1.2s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loading-bounce {
+  0%, 80%, 100% { transform: scale(0.5); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 0.9; }
+}
+
+/* ==========================================
+   Responsive
+   ========================================== */
+@media (max-width: 768px) {
+  #add-button {
+    bottom: 24px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .polaroid {
+    padding: 12px 12px 36px;
+  }
+
+  .polaroid-photo {
+    width: 80vw;
+  }
+
+  .polaroid-close {
+    top: -38px;
+    right: 0;
+  }
+
+  .upload-panel {
+    width: 95vw;
+    padding: 24px 18px;
+  }
+
+  .quote-content {
+    padding: 40px 24px;
+  }
+}
