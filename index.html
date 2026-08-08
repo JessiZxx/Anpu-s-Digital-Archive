@@ -13,57 +13,77 @@
 </head>
 <body>
 
-  <!-- ==================== Stage 1: 珠簾 ==================== -->
-  <div id="curtain-stage" class="stage stage-active">
-    <canvas id="curtain-canvas"></canvas>
-    <div id="curtain-image-wrap" style="display:none;">
-      <div id="curtain-image-left"></div>
-      <div id="curtain-image-right"></div>
-      <div id="curtain-image-gap"></div>
-    </div>
-    <div id="curtain-hint">← 滑動撥開珠簾 →</div>
-    <button id="curtain-upload-btn" title="上傳珠簾圖片">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" stroke-linejoin="round"/>
-        <polyline points="17 8 12 3 7 8" stroke-linecap="round" stroke-linejoin="round"/>
-        <line x1="12" y1="3" x2="12" y2="15" stroke-linecap="round"/>
-      </svg>
-      <span>上傳珠簾</span>
-    </button>
-    <input type="file" id="curtain-file-input" accept="image/*" style="display:none;">
+  <!-- ==================== 轉場疊層（單一簡單掃過效果） ==================== -->
+  <div id="transition-layer" class="transition-layer">
+    <div class="trans-wipe" id="trans-wipe"></div>
   </div>
 
   <!-- ==================== 黑屏過渡幕 ==================== -->
   <div id="blackout" class="blackout"></div>
 
-  <!-- ==================== Stage 2: 安溥照片 + 歡迎語 ==================== -->
+  <!-- ==================== Stage 1: 首頁（全螢幕圖 + 文字點擊熱區） ==================== -->
+  <div id="curtain-stage" class="stage stage-active">
+    <div class="page-bg" id="home-bg"></div>
+    <div class="page-empty" id="home-empty">
+      <div class="empty-title">第 1 頁 · 首頁</div>
+      <div class="empty-desc">上傳你準備好的第一張圖（波浪點 + 歡迎標語那張）</div>
+      <label class="empty-btn">
+        <input type="file" accept="image/*" id="home-file" style="display:none;">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round"/>
+          <polyline points="17 8 12 3 7 8" stroke-linecap="round"/>
+          <line x1="12" y1="3" x2="12" y2="15" stroke-linecap="round"/>
+        </svg>
+        上傳第 1 張圖
+      </label>
+      <div class="empty-tip">• 點右上角也可以隨時換圖<br>• 圖上傳後，「歡迎來到安溥的數字藏館」位置會自動變成可點擊熱區</div>
+    </div>
+
+    <button class="bg-edit-btn" id="home-edit-btn" title="更換首頁圖">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 20h9" stroke-linecap="round"/>
+        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      換首頁圖
+    </button>
+
+    <!-- 可點擊的「超連結」熱區：對齊你的標語位置（底部大字） -->
+    <a href="javascript:void(0)" id="home-hotzone" class="hotzone-link">
+      <span class="hz-underline"></span>
+    </a>
+  </div>
+
+  <!-- ==================== Stage 2: 進館頁（全螢幕圖 + 進館按鈕） ==================== -->
   <div id="welcome-stage" class="stage">
-    <div id="welcome-photo-wrap">
-      <img id="welcome-photo" src="" alt="Anpu">
-      <div id="welcome-photo-placeholder">
-        <div class="ph-icon">
-          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.2">
-            <rect x="3" y="5" width="18" height="14" rx="1"/>
-            <circle cx="8.5" cy="10.5" r="1.5"/>
-            <path d="M21 16l-5-5-9 9" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="ph-line ph-title">請放入安溥的照片</div>
-        <div class="ph-line">支援檔名（任一即可）</div>
-        <div class="ph-codes">
-          <code>welcome.jpg</code>
-          <code>welcome.png</code>
-          <code>anpu.jpg</code>
-        </div>
-        <div class="ph-line">放到 <code class="inline">assets/</code> 資料夾</div>
-        <div class="ph-tip">或點右下「+」直接從手機相簿上傳</div>
-      </div>
-      <div class="welcome-vignette"></div>
+    <div class="page-bg" id="welcome-bg"></div>
+    <div class="page-empty" id="welcome-empty">
+      <div class="empty-title">第 2 頁 · 進館</div>
+      <div class="empty-desc">上傳你準備好的第二張圖（安溥照片 + 愛我一次兩遍 + 進館那張）</div>
+      <label class="empty-btn">
+        <input type="file" accept="image/*" id="welcome-file" style="display:none;">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round"/>
+          <polyline points="17 8 12 3 7 8" stroke-linecap="round"/>
+          <line x1="12" y1="3" x2="12" y2="15" stroke-linecap="round"/>
+        </svg>
+        上傳第 2 張圖
+      </label>
+      <div class="empty-tip">• 圖上傳後，「進館」位置會自動出現可點擊按鈕<br>• 點擊就會進入 3D 球體場景</div>
     </div>
-    <div id="welcome-text-wrap">
-      <p id="welcome-text">歡迎來到安溥的數字藏館</p>
-      <button id="enter-gate">Enter</button>
-    </div>
+
+    <button class="bg-edit-btn" id="welcome-edit-btn" title="更換進館圖">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 20h9" stroke-linecap="round"/>
+        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      換進館圖
+    </button>
+
+    <!-- 進館按鈕（放在右下角，和你圖上位置對齊） -->
+    <button id="enter-gate" class="enter-link">
+      進館
+      <span class="enter-line"></span>
+    </button>
   </div>
 
   <!-- ==================== Stage 3: 3D 球體主場景 ==================== -->

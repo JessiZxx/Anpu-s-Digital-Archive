@@ -97,224 +97,255 @@ html, body {
 }
 
 /* ==========================================
-   STAGE 1: 珠簾
+   轉場疊層：單一掃過效果
    ========================================== */
-#curtain-stage {
-  z-index: 1000;
-  background: #050810;
-}
-
-#curtain-canvas {
-  position: absolute;
+.transition-layer {
+  position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  cursor: grab;
-}
-
-#curtain-canvas:active { cursor: grabbing; }
-
-/* === 珠簾圖片模式 === */
-#curtain-image-wrap {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  cursor: grab;
-}
-#curtain-image-wrap:active { cursor: grabbing; }
-
-#curtain-image-left, #curtain-image-right {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: 50.5%;
-  background-size: cover;
-  background-repeat: no-repeat;
-  will-change: transform;
-}
-
-#curtain-image-left {
-  left: 0;
-  background-position: left center;
-  box-shadow: inset -8px 0 24px rgba(0,0,0,0.5);
-}
-
-#curtain-image-right {
-  right: 0;
-  background-position: right center;
-  box-shadow: inset 8px 0 24px rgba(0,0,0,0.5);
-}
-
-#curtain-image-gap {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  z-index: 2000;
   pointer-events: none;
 }
-
-#curtain-upload-btn {
+.trans-wipe {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 10;
-  background: rgba(0,0,0,0.5);
-  color: rgba(255,255,255,0.8);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 24px;
-  padding: 8px 14px;
+  inset: 0;
+  background: #000;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.trans-wipe.play {
+  animation: wipe-sweep 1s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+}
+@keyframes wipe-sweep {
+  0%      { transform-origin: left;  transform: scaleX(0); }
+  50%     { transform-origin: left;  transform: scaleX(1); }
+  50.001% { transform-origin: right; }
+  100%    { transform-origin: right; transform: scaleX(0); }
+}
+
+/* ==========================================
+   Stage 通用
+   ========================================== */
+.stage {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease 0.2s, visibility 0.5s ease;
+}
+.stage.stage-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.4s ease 0.6s, visibility 0.1s;
+}
+
+/* 全螢幕背景圖 */
+.page-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #050505;
+}
+
+/* 空狀態（尚未上傳圖） */
+.page-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 24px;
+  text-align: center;
+  background:
+    radial-gradient(ellipse at center 50%, rgba(255,245,220,0.04), transparent 70%),
+    #0a0a0a;
+}
+.page-empty.hide { display: none; }
+
+.empty-title {
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  font-size: 20px;
+  color: #f5e6c0;
+  letter-spacing: 0.25em;
+  font-weight: 600;
+}
+.empty-desc {
+  color: rgba(240, 240, 250, 0.6);
+  font-size: 13px;
+  line-height: 1.8;
+  letter-spacing: 0.08em;
+  max-width: 420px;
+}
+.empty-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 30px;
+  background: rgba(245, 230, 192, 0.1);
+  border: 1px solid rgba(245, 230, 192, 0.3);
+  color: #f5e6c0;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, transform 0.15s;
+}
+.empty-btn:hover {
+  background: rgba(245, 230, 192, 0.18);
+}
+.empty-btn:active { transform: scale(0.97); }
+.empty-tip {
+  margin-top: 10px;
+  color: rgba(240, 240, 250, 0.35);
+  font-size: 11px;
+  line-height: 1.9;
+  letter-spacing: 0.08em;
+}
+
+/* 右上角換圖按鈕 */
+.bg-edit-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 40;
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px;
+  padding: 6px 12px 6px 10px;
+  font-family: inherit;
+  font-size: 11px;
   letter-spacing: 0.1em;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   backdrop-filter: blur(6px);
   -webkit-tap-highlight-color: transparent;
   transition: background 0.2s, color 0.2s;
 }
-
-#curtain-upload-btn:hover {
-  background: rgba(0,0,0,0.7);
+.bg-edit-btn:hover {
+  background: rgba(0,0,0,0.8);
   color: #fff;
 }
 
-#curtain-hint {
+/* ==========================================
+   STAGE 1: 首頁
+   ========================================== */
+#curtain-stage { z-index: 1000; }
+
+/* 首頁熱區（覆蓋你圖上底部大字的位置，感覺像超連結） */
+.hotzone-link {
   position: absolute;
-  bottom: 10vh;
+  left: 8%;
+  right: 8%;
+  bottom: 10%;
+  height: 20%;
+  z-index: 20;
+  display: block;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 4px;
+  /* 可視化：有上傳圖才顯示淡 hover 效果 */
+  --show-hint: 0;
+}
+/* 當首頁有背景圖時，熱區的 hover 才起作用（透過 JS 加 has-bg class） */
+#curtain-stage.has-bg .hotzone-link {
+  --show-hint: 1;
+}
+.hotzone-link .hz-underline {
+  position: absolute;
   left: 50%;
-  transform: translateX(-50%);
-  color: rgba(255, 220, 130, 0.85);
-  font-size: 13px;
-  letter-spacing: 0.2em;
-  font-weight: 300;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  animation: hint-fadein 1s ease 0.5s forwards, hint-pulse 2.5s ease-in-out 1.5s infinite;
-  text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+  bottom: 12%;
+  transform: translateX(-50%) scaleX(0);
+  width: 35%;
+  max-width: 520px;
+  height: 2px;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 0 16px rgba(255,255,255,0.3);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center;
+  opacity: var(--show-hint);
 }
-
-@keyframes hint-fadein {
-  to { opacity: 1; }
+.hotzone-link:hover .hz-underline {
+  transform: translateX(-50%) scaleX(1);
 }
-
-@keyframes hint-pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+.hotzone-link:hover {
+  /* 游標手指 + 輕微亮度，就像超連結 */
+  filter: brightness(1.04);
+}
+/* 提示游標 */
+#curtain-stage.has-bg .hotzone-link {
+  cursor: pointer;
 }
 
 /* ==========================================
-   STAGE 2: 照片歡迎頁
+   STAGE 2: 進館頁
    ========================================== */
-#welcome-stage {
-  z-index: 800;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
+#welcome-stage { z-index: 900; }
 
-#welcome-photo-wrap {
+/* 進館按鈕：右下角，模擬你圖上的位置，樣式就像文字超連結 */
+.enter-link {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  right: 12%;
+  bottom: 13%;
+  z-index: 20;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow:
+    -2px 2px 0 #000,
+    0 3px 0 #000,
+    0 0 18px rgba(255,255,255,0.12);
+  -webkit-text-stroke: 1.2px #000;
+  paint-order: stroke fill;
+  cursor: pointer;
+  user-select: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.6s ease 0.5s, transform 0.6s ease 0.5s, color 0.2s;
+  line-height: 1;
 }
-
-#welcome-photo {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: cover;
-  width: 100%;
-  height: 100%;
-  filter: brightness(0.85) contrast(1.05);
-  animation: photo-zoom 20s ease-in-out infinite alternate;
+#welcome-stage.has-bg .enter-link {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
 }
-
-@keyframes photo-zoom {
-  from { transform: scale(1); }
-  to { transform: scale(1.05); }
+.enter-link:hover {
+  color: #fff4d6;
 }
+.enter-link:active { transform: translateY(0) scale(0.97); }
 
-#welcome-photo-placeholder {
+.enter-link .enter-line {
   position: absolute;
-  top: 0;
   left: 0;
   right: 0;
-  height: 60%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--cream-dim);
-  font-size: 14px;
-  letter-spacing: 0.15em;
-  background: radial-gradient(ellipse at center 60%, #1a1410, #0a0807);
-  padding: 40px 20px;
-  text-align: center;
-  opacity: 0.85;
+  bottom: 4px;
+  height: 3px;
+  background: currentColor;
+  transform: scaleX(0.3);
+  transform-origin: center;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: 2px;
+}
+.enter-link:hover .enter-line,
+#welcome-stage.has-bg .enter-link .enter-line {
+  transform: scaleX(1);
 }
 
-.ph-icon {
-  color: var(--gold-bright);
-  opacity: 0.7;
-  margin-bottom: 8px;
-}
-
-.ph-line { font-size: 13px; line-height: 1.6; }
-.ph-title {
-  color: var(--cream);
-  font-size: 16px;
-  letter-spacing: 0.2em;
-  margin-bottom: 4px;
-}
-
-.ph-codes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin: 8px 0;
-}
-
-.ph-codes code,
-.ph-line code.inline {
-  font-family: 'Inter', monospace;
-  color: var(--gold-bright);
-  background: rgba(255, 220, 130, 0.08);
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 220, 130, 0.2);
-  font-size: 12px;
-  letter-spacing: 0.05em;
-}
-
-.ph-tip {
-  margin-top: 16px;
-  font-size: 12px;
-  color: var(--gold);
-  opacity: 0.85;
-  letter-spacing: 0.1em;
-  padding: 8px 14px;
-  border-top: 1px solid rgba(255, 220, 130, 0.15);
-  max-width: 80%;
-}
-
-.welcome-vignette {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
-}
 
 #globe-hint {
   position: fixed;
@@ -376,87 +407,6 @@ html, body {
 
 @keyframes tooltip-fadeout {
   to { opacity: 0; transform: translateX(8px); }
-}
-
-#welcome-text-wrap {
-  position: absolute;
-  bottom: 8%;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-  padding: 32px;
-  width: 100%;
-  text-align: center;
-  pointer-events: none;
-}
-
-#welcome-text-wrap #enter-gate {
-  pointer-events: auto;
-}
-
-#welcome-text {
-  font-size: clamp(20px, 4.5vw, 32px);
-  font-weight: 400;
-  color: var(--cream);
-  letter-spacing: 0.15em;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 0, 0, 0.5);
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 1.5s ease 0.3s, transform 1.5s ease 0.3s;
-}
-
-#welcome-stage.stage-active #welcome-text {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-#enter-gate {
-  background: none;
-  border: none;
-  color: var(--cream);
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 300;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  cursor: pointer;
-  padding: 12px 20px;
-  -webkit-tap-highlight-color: transparent;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 1.5s ease 1.2s, transform 1.5s ease 1.2s, color 0.3s;
-  position: relative;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
-}
-
-#welcome-stage.stage-active #enter-gate {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-#enter-gate:hover {
-  color: var(--gold-bright);
-}
-
-#enter-gate::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 1px;
-  background: currentColor;
-  transition: width 0.6s ease;
-}
-
-#welcome-stage.stage-active #enter-gate::after {
-  width: 36px;
-  transition: width 0.8s ease 2s;
 }
 
 /* ==========================================

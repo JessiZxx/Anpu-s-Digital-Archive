@@ -123,24 +123,44 @@ class StageManager {
     this.stages = {
       curtain: document.getElementById('curtain-stage'),
       welcome: document.getElementById('welcome-stage'),
-      globe: document.getElementById('globe-stage'),
+      globe:   document.getElementById('globe-stage'),
     };
     this.blackout = document.getElementById('blackout');
+    this.transWipe = document.getElementById('trans-wipe');
     this.current = 'curtain';
   }
 
-  show(name) {
+  // 首頁→進館頁 / 進館→球體 的 PPT 橫掃轉場
+  async transitionTo(name, withWipe = true) {
     if (this.current === name) return;
-    this.current = name;
-    Object.values(this.stages).forEach(s => {
-      s.classList.remove('stage-active', 'stage-entering');
-    });
-    if (this.stages[name]) {
-      this.stages[name].classList.add('stage-active', 'stage-entering');
-      setTimeout(() => {
-        this.stages[name].classList.remove('stage-entering');
-      }, 900);
+    const prev = this.current;
+
+    if (withWipe) {
+      // Step 1: 播放掃入動畫（左→右蓋滿）
+      this.transWipe.classList.remove('play');
+      // reflow
+      void this.transWipe.offsetWidth;
+      this.transWipe.classList.add('play');
+
+      // Step 2: 掃到一半（0.5s 時全黑）切換畫面
+      await wait(500);
+      this.current = name;
+      Object.values(this.stages).forEach(s => s.classList.remove('stage-active'));
+      if (this.stages[name]) this.stages[name].classList.add('stage-active');
+
+      // Step 3: 等掃出（0.5s）完成
+      await wait(520);
+      this.transWipe.classList.remove('play');
+    } else {
+      this.current = name;
+      Object.values(this.stages).forEach(s => s.classList.remove('stage-active'));
+      if (this.stages[name]) this.stages[name].classList.add('stage-active');
     }
+  }
+
+  // 保留舊介面
+  show(name) {
+    this.transitionTo(name, false);
   }
 
   blackoutShow(duration = 500) {
@@ -149,7 +169,6 @@ class StageManager {
       setTimeout(resolve, duration);
     });
   }
-
   blackoutHide(duration = 500) {
     return new Promise(resolve => {
       setTimeout(() => {
@@ -160,470 +179,167 @@ class StageManager {
   }
 }
 
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 // ============================================================
-//  STAGE 1: 珠簾
+//  頁面背景管理器（支援上傳 & 永久儲存到 localStorage）
+// ============================================================
+
+const PAGE_BG_KEY = 'anpu-page-bg-v1';
+
+function getPageBgStore() {
+  try {
+    return JSON.parse(localStorage.getItem(PAGE_BG_KEY) || '{}');
+  } catch (e) { return {}; }
+}
+function setPageBgStore(obj) {
+  try {
+    localStorage.setItem(PAGE_BG_KEY, JSON.stringify(obj));
+  } catch (e) {
+    alert('儲存空間不足，圖片無法保存。可壓縮後再試。');
+  }
+}
+async function compressToJPEG(dataURL, maxWidth = 1920, quality = 0.86) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataURL);
+    img.src = dataURL;
+  });
+}
+
+// ============================================================
+//  STAGE 1: 首頁（全螢幕圖 + 點擊熱區跳轉）
 // ============================================================
 
 class CurtainStage {
   constructor(stageManager) {
-    this.stage = document.getElementById('curtain-stage');
-    this.canvas = document.getElementById('curtain-canvas');
-    this.ctx = this.canvas.getContext('2d');
     this.stageManager = stageManager;
+    this.stage = document.getElementById('curtain-stage');
+    this.bg    = document.getElementById('home-bg');
+    this.empty = document.getElementById('home-empty');
+    this.file  = document.getElementById('home-file');
+    this.edit  = document.getElementById('home-edit-btn');
+    this.hot   = document.getElementById('home-hotzone');
 
-    // 圖片模式元素
-    this.imageWrap = document.getElementById('curtain-image-wrap');
-    this.imageLeft = document.getElementById('curtain-image-left');
-    this.imageRight = document.getElementById('curtain-image-right');
-    this.imageGap = document.getElementById('curtain-image-gap');
-    this.uploadBtn = document.getElementById('curtain-upload-btn');
-    this.fileInput = document.getElementById('curtain-file-input');
-
-    this.imageMode = false;
-
-    // Canvas 珠簾參數
-    this.beadSize = 5;
-    this.stringSpacing = 16;
-    this.stringCount = 0;
-
-    this.isDragging = false;
-    this.dragStartX = 0;
-    this.partingAmount = 0;
-    this.targetParting = 0;
-    this.openThreshold = 0.7;
-    this.isOpen = false;
-    this.bounceActive = false;
-    this.bounceTime = 0;
-
-    this.strings = [];
-
-    this.init();
+    this.loadSaved();
+    this.bindEvents();
   }
 
-  init() {
-    // 檢查是否有已上傳的珠簾圖片
-    const savedImage = sessionStorage.getItem('anpu-curtain-image');
-    if (savedImage) {
-      this.useImageMode(savedImage);
-    } else {
-      this.resize();
-    }
+  loadSaved() {
+    const saved = getPageBgStore();
+    if (saved.home) this.applyBg(saved.home);
+  }
 
-    // 珠簾圖片上傳
-    this.uploadBtn.addEventListener('click', () => this.fileInput.click());
-    this.fileInput.addEventListener('change', (e) => {
-      if (e.target.files[0]) this.handleCurtainUpload(e.target.files[0]);
+  bindEvents() {
+    // 空狀態上傳
+    this.file.addEventListener('change', e => {
+      if (e.target.files[0]) this.handleUpload(e.target.files[0]);
     });
+    // 右上角編輯鈕
+    this.edit.addEventListener('click', () => this.file.click());
 
-    window.addEventListener('resize', () => this.resize());
-
-    // 拖拽事件 — canvas 和圖片模式共用
-    const dragTarget = this.imageMode ? this.imageWrap : this.canvas;
-    this.setupDragEvents(dragTarget);
-
-    this.animate();
+    // 熱區：超連結跳轉到進館頁
+    this.hot.addEventListener('click', async () => {
+      if (!this.stage.classList.contains('has-bg')) return; // 沒圖就不跳
+      await this.stageManager.transitionTo('welcome', true);
+    });
+    // 空白鍵也能按
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (this.stage.classList.contains('stage-active')
+            && this.stage.classList.contains('has-bg')) {
+          this.hot.click();
+        }
+      }
+    });
   }
 
-  setupDragEvents(target) {
-    target.addEventListener('mousedown', (e) => this.onDragStart(e.clientX));
-    window.addEventListener('mousemove', (e) => this.onDragMove(e.clientX));
-    window.addEventListener('mouseup', () => this.onDragEnd());
-
-    target.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      this.onDragStart(e.touches[0].clientX);
-    }, { passive: false });
-    window.addEventListener('touchmove', (e) => {
-      if (this.isDragging) e.preventDefault();
-      this.onDragMove(e.touches[0].clientX);
-    }, { passive: false });
-    window.addEventListener('touchend', () => this.onDragEnd());
-  }
-
-  async handleCurtainUpload(file) {
+  async handleUpload(file) {
     if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const resized = await this.resizeImage(reader.result, 1920);
-      try {
-        sessionStorage.setItem('anpu-curtain-image', resized);
-      } catch (e) {
-        // sessionStorage 可能滿了，用原圖
-        console.warn('sessionStorage full, using original');
-      }
-      this.useImageMode(resized);
-    };
-    reader.readAsDataURL(file);
-    this.fileInput.value = '';
+    const dataURL = await fileToDataURL(file);
+    const compressed = await compressToJPEG(dataURL, 1920, 0.86);
+    const store = getPageBgStore();
+    store.home = compressed;
+    setPageBgStore(store);
+    this.applyBg(compressed);
+    this.file.value = '';
   }
 
-  resizeImage(dataURL, maxSize) {
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width, height = img.height;
-        if (width > maxSize || height > maxSize) {
-          if (width > height) {
-            height = height * maxSize / width;
-            width = maxSize;
-          } else {
-            width = width * maxSize / height;
-            height = maxSize;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      img.src = dataURL;
-    });
-  }
-
-  useImageMode(dataURL) {
-    this.imageMode = true;
-    this.canvas.style.display = 'none';
-    this.imageWrap.style.display = 'block';
-    this.imageLeft.style.backgroundImage = `url(${dataURL})`;
-    this.imageRight.style.backgroundImage = `url(${dataURL})`;
-    const label = this.uploadBtn.querySelector('span');
-    if (label) label.textContent = '更換珠簾';
-
-    this.w = window.innerWidth;
-    this.h = window.innerHeight;
-
-    // 重新綁定拖拽到圖片容器
-    this.setupDragEvents(this.imageWrap);
-  }
-
-  resize() {
-    if (this.imageMode) {
-      this.w = window.innerWidth;
-      this.h = window.innerHeight;
-      return;
-    }
-
-    const dpr = Math.min(window.devicePixelRatio, 2);
-    this.canvas.width = window.innerWidth * dpr;
-    this.canvas.height = window.innerHeight * dpr;
-    this.canvas.style.width = window.innerWidth + 'px';
-    this.canvas.style.height = window.innerHeight + 'px';
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    this.w = window.innerWidth;
-    this.h = window.innerHeight;
-    this.centerX = this.w / 2;
-    this.halfWidth = this.w / 2;
-
-    this.stringCount = Math.ceil(this.w / this.stringSpacing) + 4;
-
-    this.strings = [];
-    const startX = (this.w - (this.stringCount - 1) * this.stringSpacing) / 2;
-    for (let i = 0; i < this.stringCount; i++) {
-      const baseX = startX + i * this.stringSpacing;
-
-      const stringHeightRatio = randomBetween(0.85, 1.0);
-      const beads = [];
-      let y = randomBetween(8, 30);
-      while (y < this.h * stringHeightRatio) {
-        const gap = randomBetween(18, 70);
-        const isHighlight = Math.random() < 0.18;
-        const sizeMul = isHighlight ? randomBetween(1.6, 2.4) : randomBetween(0.7, 1.15);
-        beads.push({
-          relY: y,
-          sizeMul,
-          isHighlight,
-          phase: Math.random() * Math.PI * 2,
-          swayAmp: randomBetween(0.4, 1.2),
-          swayFreq: randomBetween(0.4, 0.9),
-          lineAlpha: randomBetween(0.18, 0.42),
-          twinkleSpeed: randomBetween(0.8, 2.2),
-        });
-        y += gap;
-      }
-
-      this.strings.push({ baseX, beads });
-    }
-  }
-
-  onDragStart(x) {
-    if (this.isOpen) return;
-    this.isDragging = true;
-    this.dragStartX = x;
-  }
-
-  onDragMove(x) {
-    if (!this.isDragging) return;
-    const dx = Math.abs(x - this.dragStartX);
-    this.targetParting = clamp(dx / (this.w * 0.35), 0, 1.0);
-  }
-
-  onDragEnd() {
-    if (!this.isDragging) return;
-    this.isDragging = false;
-
-    if (this.targetParting >= this.openThreshold) {
-      this.targetParting = 1.0;
-      this.bounceActive = true;
-      this.bounceTime = 0;
-      setTimeout(() => this.openComplete(), 500);
-    } else {
-      this.targetParting = 0;
-    }
-  }
-
-  async openComplete() {
-    if (this.isOpen) return;
-    this.isOpen = true;
-    await this.stageManager.blackoutShow(400);
-    this.stageManager.show('welcome');
-    await this.stageManager.blackoutHide(500);
-  }
-
-  animate() {
-    requestAnimationFrame(() => this.animate());
-
-    this.partingAmount = lerp(this.partingAmount, this.targetParting, 0.08);
-    if (Math.abs(this.partingAmount - this.targetParting) < 0.001) {
-      this.partingAmount = this.targetParting;
-    }
-
-    if (this.bounceActive) {
-      this.bounceTime += 0.016;
-      if (this.bounceTime > 2.5) this.bounceActive = false;
-    }
-
-    if (this.imageMode) {
-      this.updateImageTransform();
-    } else {
-      this.draw();
-    }
-  }
-
-  updateImageTransform() {
-    const partingPx = this.partingAmount * this.w * 0.4;
-    this.imageLeft.style.transform = `translateX(${-partingPx}px)`;
-    this.imageRight.style.transform = `translateX(${partingPx}px)`;
-    this.imageGap.style.width = `${partingPx * 2}px`;
-  }
-
-  draw() {
-    const ctx = this.ctx;
-    const w = this.w;
-    const h = this.h;
-    const t = performance.now() * 0.001;
-
-    ctx.clearRect(0, 0, w, h);
-
-    // Background — deep black with subtle warm vignette near center
-    ctx.fillStyle = '#050505';
-    ctx.fillRect(0, 0, w, h);
-
-    // Subtle warm center glow that intensifies while parting
-    const glowAlpha = 0.08 + this.partingAmount * 0.18;
-    const glow = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.45);
-    glow.addColorStop(0, `rgba(255, 200, 140, ${glowAlpha})`);
-    glow.addColorStop(0.5, `rgba(220, 150, 80, ${glowAlpha * 0.3})`);
-    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, w, h);
-
-    // ===== Phase 1: draw all the thin vertical lines first (under the beads) =====
-    const partingPx = this.partingAmount * w * 0.35;
-
-    for (let i = 0; i < this.strings.length; i++) {
-      const str = this.strings[i];
-      const baseX = str.baseX;
-      const distFromCenter = Math.abs(baseX - this.centerX);
-      const offsetFactor = (1 - distFromCenter / this.halfWidth) * 0.7;
-      const sign = baseX >= this.centerX ? 1 : -1;
-      const offset = sign * partingPx * offsetFactor;
-
-      // Each string line gets a small sway
-      const lineSway = Math.sin(t * 0.6 + i * 0.4) * 0.6;
-      const stringX = baseX + offset + lineSway;
-
-      // Skip off-screen
-      if (stringX < -10 || stringX > w + 10) continue;
-
-      // Use a representative line alpha from the first bead
-      const lineAlpha = (str.beads[0] && str.beads[0].lineAlpha) || 0.3;
-
-      // Draw the string as a soft vertical line, slightly broken by gaps
-      ctx.strokeStyle = `rgba(220, 220, 230, ${lineAlpha})`;
-      ctx.lineWidth = 0.6;
-      ctx.beginPath();
-      ctx.moveTo(stringX, 0);
-      ctx.lineTo(stringX, h);
-      ctx.stroke();
-    }
-
-    // ===== Phase 2: draw the beads =====
-    for (let i = 0; i < this.strings.length; i++) {
-      const str = this.strings[i];
-      const baseX = str.baseX;
-      const distFromCenter = Math.abs(baseX - this.centerX);
-      const offsetFactor = (1 - distFromCenter / this.halfWidth) * 0.7;
-      const sign = baseX >= this.centerX ? 1 : -1;
-      const offset = sign * partingPx * offsetFactor;
-      const lineSway = Math.sin(t * 0.6 + i * 0.4) * 0.6;
-      const stringX = baseX + offset + lineSway;
-
-      if (stringX < -30 || stringX > w + 30) continue;
-
-      for (let j = 0; j < str.beads.length; j++) {
-        const bead = str.beads[j];
-        const sway = Math.sin(t * bead.swayFreq + bead.phase) * bead.swayAmp;
-
-        let bounceOffset = 0;
-        if (this.bounceActive) {
-          const decay = Math.exp(-this.bounceTime * 2);
-          bounceOffset = Math.sin(this.bounceTime * 8 + bead.phase) * 2 * decay;
-        }
-
-        const bx = stringX + sway + bounceOffset;
-        const by = bead.relY;
-        const r = this.beadSize * bead.sizeMul;
-
-        // Subtle twinkle on highlight beads
-        let twinkle = 1;
-        if (bead.isHighlight) {
-          twinkle = 0.75 + 0.25 * Math.sin(t * bead.twinkleSpeed + bead.phase * 3);
-        }
-
-        if (bx < -20 || bx > w + 20) continue;
-
-        this.drawBead(ctx, bx, by, r, bead.isHighlight, twinkle);
-      }
-    }
-  }
-
-  drawBead(ctx, x, y, r, isHighlight, twinkle) {
-    // Soft outer glow — only meaningful for highlight beads
-    if (isHighlight) {
-      const glowR = r * (4 + twinkle * 2);
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, glowR);
-      glow.addColorStop(0, `rgba(255, 235, 200, ${0.35 * twinkle})`);
-      glow.addColorStop(0.4, `rgba(255, 220, 170, ${0.12 * twinkle})`);
-      glow.addColorStop(1, 'rgba(255, 220, 170, 0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(x, y, glowR, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Tiny soft halo for normal beads too — gives a hint of glow
-    const haloR = r * 1.8;
-    const halo = ctx.createRadialGradient(x, y, 0, x, y, haloR);
-    halo.addColorStop(0, 'rgba(255, 250, 240, 0.18)');
-    halo.addColorStop(1, 'rgba(255, 250, 240, 0)');
-    ctx.fillStyle = halo;
-    ctx.beginPath();
-    ctx.arc(x, y, haloR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Main bead body — soft white/silver with subtle warm core
-    const bodyAlpha = isHighlight ? 1.0 : 0.85;
-    const grad = ctx.createRadialGradient(
-      x - r * 0.3, y - r * 0.35, 0,
-      x, y, r
-    );
-    if (isHighlight) {
-      grad.addColorStop(0, `rgba(255, 252, 240, ${bodyAlpha})`);
-      grad.addColorStop(0.5, `rgba(245, 230, 200, ${bodyAlpha * 0.7})`);
-      grad.addColorStop(1, `rgba(180, 160, 130, 0)`);
-    } else {
-      grad.addColorStop(0, `rgba(255, 255, 250, ${bodyAlpha})`);
-      grad.addColorStop(0.5, `rgba(220, 220, 220, ${bodyAlpha * 0.5})`);
-      grad.addColorStop(1, `rgba(120, 120, 120, 0)`);
-    }
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Tiny bright pinpoint core
-    ctx.fillStyle = isHighlight
-      ? `rgba(255, 255, 250, ${0.95 * twinkle})`
-      : 'rgba(255, 255, 250, 0.7)';
-    ctx.beginPath();
-    ctx.arc(x - r * 0.15, y - r * 0.2, Math.max(0.4, r * 0.18), 0, Math.PI * 2);
-    ctx.fill();
+  applyBg(dataURL) {
+    this.bg.style.backgroundImage = `url(${dataURL})`;
+    this.empty.classList.add('hide');
+    this.stage.classList.add('has-bg');
+    const label = this.edit.querySelector('span');
+    if (label) label.textContent = '換首頁圖';
   }
 }
 
+
 // ============================================================
-//  STAGE 2: 歡迎頁
+//  STAGE 2: 進館頁（全螢幕圖 + 進館按鈕）
 // ============================================================
 
 class WelcomeStage {
   constructor(stageManager) {
     this.stageManager = stageManager;
-    this.photo = document.getElementById('welcome-photo');
-    this.placeholder = document.getElementById('welcome-photo-placeholder');
+    this.stage   = document.getElementById('welcome-stage');
+    this.bg      = document.getElementById('welcome-bg');
+    this.empty   = document.getElementById('welcome-empty');
+    this.file    = document.getElementById('welcome-file');
+    this.edit    = document.getElementById('welcome-edit-btn');
     this.enterBtn = document.getElementById('enter-gate');
 
+    this.loadSaved();
+    this.bindEvents();
+  }
+
+  loadSaved() {
+    const saved = getPageBgStore();
+    if (saved.welcome) this.applyBg(saved.welcome);
+  }
+
+  bindEvents() {
+    // 空狀態上傳
+    this.file.addEventListener('change', e => {
+      if (e.target.files[0]) this.handleUpload(e.target.files[0]);
+    });
+    // 右上角編輯鈕
+    this.edit.addEventListener('click', () => this.file.click());
+
+    // 進館按鈕 → 3D 球體
     this.enterBtn.addEventListener('click', () => this.goToGlobe());
-
-    // Try multiple common filenames
-    this.tryLoadPhoto();
   }
 
-  tryLoadPhoto() {
-    // First, check if user uploaded a welcome photo in this session
-    const sessionPhoto = sessionStorage.getItem('anpu-welcome-photo');
-    if (sessionPhoto) {
-      this.photo.onload = () => {
-        this.photo.style.display = 'block';
-        this.placeholder.style.display = 'none';
-      };
-      this.photo.onerror = () => {
-        this.tryLoadRemote();
-      };
-      this.photo.src = sessionPhoto;
-      return;
-    }
-    this.tryLoadRemote();
+  async handleUpload(file) {
+    if (!file.type.startsWith('image/')) return;
+    const dataURL = await fileToDataURL(file);
+    const compressed = await compressToJPEG(dataURL, 1920, 0.86);
+    const store = getPageBgStore();
+    store.welcome = compressed;
+    setPageBgStore(store);
+    this.applyBg(compressed);
+    this.file.value = '';
   }
 
-  tryLoadRemote() {
-    const candidates = [
-      'assets/welcome.jpg',
-      'assets/welcome.png',
-      'assets/welcome.webp',
-      'assets/anpu.jpg',
-      'assets/anpu.png',
-      'assets/photo.jpg',
-      'assets/IMG_2083.jpg',
-    ];
-
-    let idx = 0;
-    const tryNext = () => {
-      if (idx >= candidates.length) {
-        this.photo.style.display = 'none';
-        this.placeholder.style.display = 'flex';
-        return;
-      }
-      this.photo.onerror = () => {
-        idx++;
-        tryNext();
-      };
-      this.photo.onload = () => {
-        this.photo.style.display = 'block';
-        this.placeholder.style.display = 'none';
-      };
-      this.photo.src = candidates[idx];
-    };
-    tryNext();
+  applyBg(dataURL) {
+    this.bg.style.backgroundImage = `url(${dataURL})`;
+    this.empty.classList.add('hide');
+    this.stage.classList.add('has-bg');
+    const label = this.edit.querySelector('span');
+    if (label) label.textContent = '換進館圖';
   }
 
   async goToGlobe() {
-    // 黑屏過渡
-    await this.stageManager.blackoutShow(400);
-    this.stageManager.show('globe');
-    await this.stageManager.blackoutHide(600);
+    if (!this.stage.classList.contains('has-bg')) return; // 沒圖時可以進，但進館按鈕本來就隱藏
+    await this.stageManager.transitionTo('globe', true);
     window.dispatchEvent(new CustomEvent('globe-stage-ready'));
   }
 }
