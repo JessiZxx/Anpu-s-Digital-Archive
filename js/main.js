@@ -61,24 +61,34 @@ async function initStorage() {
 
 async function loadArchive() {
   if (!cloudStorage) await initStorage();
-  const data = await cloudStorage.fetchData();
-  const allPhotos = [...DEFAULT_DATA.photos];
-  const allQuotes = [...DEFAULT_DATA.quotes];
-  if (data.photos) {
-    data.photos.forEach(p => {
-      const idx = allPhotos.findIndex(dp => dp.id === p.id);
-      if (idx >= 0) allPhotos[idx] = p;
-      else allPhotos.push(p);
-    });
-  }
-  if (data.quotes) {
-    data.quotes.forEach(q => {
-      const idx = allQuotes.findIndex(dq => dq.id === q.id);
-      if (idx >= 0) allQuotes[idx] = q;
-      else allQuotes.push(q);
-    });
-  }
-  return { photos: allPhotos, quotes: allQuotes };
+
+  // 1) 先用 GitHub 倉庫裡 photos/ & texts/ 的内容(用户直接在 GitHub 网页上传)
+  const repo = await loadRepoContents();
+
+  // 2) 再合并默认数据 + 云端用户上传(localStorage/GitHubStorage 兜底)
+  let data;
+  try {
+    data = await cloudStorage.fetchData();
+  } catch (_) { data = { photos: [], quotes: [] }; }
+
+  const allPhotos = [
+    ...DEFAULT_DATA.photos,
+    ...(repo.photos || []),
+    ...(data.photos || []),
+  ];
+  const allQuotes = [
+    ...DEFAULT_DATA.quotes,
+    ...(repo.quotes || []),
+    ...(data.quotes || []),
+  ];
+
+  // 去重(以 id 为 key,后面覆盖前面,保证用户云端/仓库内容的优先)
+  const pMap = new Map();
+  allPhotos.forEach(p => pMap.set(p.id, p));
+  const qMap = new Map();
+  allQuotes.forEach(q => qMap.set(q.id, q));
+
+  return { photos: [...pMap.values()], quotes: [...qMap.values()] };
 }
 
 async function saveArchive(data) {
@@ -105,6 +115,181 @@ function generateId() {
 }
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// 簡易中文友好換行,每 maxChars 個字左右切一行
+function wrapText(text, maxChars = 10) {
+  if (!text) return [''];
+  const raw = text.replace(/\r/g, '').split('\n').filter(l => l.length > 0);
+  if (raw.length === 0) return [''];
+  const out = [];
+  raw.forEach(line => {
+    // 先去除行末的中日韩全角句号等标点单独成行
+    let remaining = line;
+    while (remaining.length > 0) {
+      // 如果长度在 maxChars 以内,直接加
+      if (remaining.length <= maxChars) {
+        out.push(remaining);
+        break;
+      }
+      // 找下一个切分点
+      let cut = maxChars;
+      // 避免把标点切在句首,如果 cut 位置是标点,往前切一个
+      const punct = /[，。！？、；：,.!?;:]/;
+      while (cut < remaining.length && punct.test(remaining[cut]) && cut > maxChars - 3) cut--;
+      out.push(remaining.slice(0, cut));
+      remaining = remaining.slice(cut);
+    }
+  });
+  return out.length ? out : [''];
+}
+
+// ============================================================
+//  REPO CONTENTS LOADER (從 GitHub 倉庫的 photos/ & texts/ 文件夾讀取)
+// ============================================================
+// 用戶在 GitHub 網頁介面傳圖片到 photos/、傳 .txt 到 texts/,
+// 網站會自動讀取並出現在球體和平鋪視圖裡,所有人可見。
+
+// 自动判斷 base path:GitHub Pages(带 repo 路径)还是本地根路径
+function getBasePath() {
+  const { pathname } = window.location;
+  // GitHub Pages: 通常 /RepoName/ 或 /user.github.io/RepoName/
+  if (pathname.startsWith('/Anpu-s-Digital-Archive')) {
+    const idx = pathname.indexOf('/', 1);
+    return idx > 0 ? pathname.slice(0, idx + 1) : '/Anpu-s-Digital-Archive/';
+  }
+  return './';
+}
+
+// 图片文件扩展名白名单
+const PHOTO_EXT = /\.(jpg|jpeg|png|webp|gif|avif)$/i;
+const TEXT_EXT = /\.(txt|md)$/i;
+
+async function listRepoDir(dirName) {
+  const base = getBasePath();
+  const dir = dirName.endsWith('/') ? dirName : dirName + '/';
+  // 方案:先尝试调 GitHub REST API 列出目录(更精确,含实时 commit)
+  // 如果失败(比如 CORS/未登录),退化到读 _index.json(每次 push 后更新)
+  try {
+    // 从页面 meta 或默认读 owner/repo
+    const owner = 'JessiZxx';
+    const repo = 'Anpu-s-Digital-Archive';
+    const branch = 'main';
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${dirName}?ref=${branch}`;
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/vnd.github+json' },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const list = await res.json();
+      if (Array.isArray(list)) {
+        return list.map(it => ({ name: it.name, type: it.type, download_url: it.download_url, path: it.path }));
+      }
+    }
+  } catch (e) {
+    // API 失败走 fallback
+    console.warn('[RepoLoader] GitHub API 不可用,尝试 _index.json:', e?.message);
+  }
+
+  // Fallback: 读根目录下的 _index.json (我们会在每次 push 后提供一份快照)
+  try {
+    const idx = await fetch(`${base}_index.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (idx.ok) {
+      const json = await idx.json();
+      return (json[dirName] || []).map(n => ({ name: n, type: 'file', download_url: `${base}${dirName}/${n}` }));
+    }
+  } catch (_) { /* ignore */ }
+
+  return [];
+}
+
+// 读取 .txt 的文本内容
+async function fetchTextFile(url) {
+  try {
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return '';
+    return (await res.text() || '').trim();
+  } catch (e) {
+    console.warn('[RepoLoader] 讀取文字失敗:', e);
+    return '';
+  }
+}
+
+// 把仓库里的 photos/ + texts/ 合并成 {photos, quotes} 数据结构(兼容 sphere/flat 两种 category)
+async function loadRepoContents() {
+  const PHOTO = 'photo';
+  const TEXT = 'quote';
+  const photos = [];
+  const quotes = [];
+  const base = getBasePath();
+
+  // --- 图片 ---
+  try {
+    const photoEntries = await listRepoDir('photos');
+    photoEntries.forEach((e, i) => {
+      if (e.type !== 'file') return;
+      if (!PHOTO_EXT.test(e.name)) return;
+      const src = e.download_url || `${base}photos/${encodeURIComponent(e.name)}`;
+      const baseName = e.name.replace(PHOTO_EXT, '');
+      // 支持命名规则:sphere_xxx.jpg 放球体, flat_xxx.jpg 放平铺,否则两种视图都展示
+      let category = 'both';
+      if (/^sphere_/i.test(baseName)) category = 'sphere';
+      else if (/^flat_/i.test(baseName)) category = 'flat';
+
+      const pushCat = cat => photos.push({
+        id: `repo-p-${cat}-${i}-${baseName}`,
+        category: cat,
+        title: baseName.replace(/^(sphere|flat)_/i, '').replace(/[-_]+/g, ' '),
+        src: addCacheBust(src),
+      });
+      if (category === 'both') { pushCat('sphere'); pushCat('flat'); }
+      else pushCat(category);
+    });
+  } catch (e) {
+    console.warn('[RepoLoader] 讀取 photos 失敗:', e);
+  }
+
+  // --- 文字(.txt / .md) ---
+  try {
+    const textEntries = await listRepoDir('texts');
+    for (let i = 0; i < textEntries.length; i++) {
+      const e = textEntries[i];
+      if (e.type !== 'file') continue;
+      if (!TEXT_EXT.test(e.name)) continue;
+      const url = e.download_url || `${base}texts/${encodeURIComponent(e.name)}`;
+      let content = await fetchTextFile(url);
+      if (!content) continue;
+      // 每個 txt 檔:以空行分隔多段,每段独立一条语录
+      const segments = content.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+      const chunks = segments.length > 0 ? segments : [content];
+
+      const baseName = e.name.replace(TEXT_EXT, '');
+      let category = 'both';
+      if (/^sphere_/i.test(baseName)) category = 'sphere';
+      else if (/^flat_/i.test(baseName)) category = 'flat';
+
+      chunks.forEach((text, ci) => {
+        const pushCat = cat => quotes.push({
+          id: `repo-q-${cat}-${i}-${ci}-${baseName}`,
+          category: cat,
+          title: baseName.replace(/^(sphere|flat)_/i, ''),
+          text: text.slice(0, 240),
+        });
+        if (category === 'both') { pushCat('sphere'); pushCat('flat'); }
+        else pushCat(category);
+      });
+    }
+  } catch (e) {
+    console.warn('[RepoLoader] 讀取 texts 失敗:', e);
+  }
+
+  return { photos, quotes };
+}
+
+function addCacheBust(url) {
+  if (!url) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}t=${Date.now()}`;
+}
 
 // ============================================================
 //  STAGE MANAGER
@@ -224,6 +409,7 @@ class PhotoSphere {
     const h = this.container.clientHeight || window.innerHeight;
 
     this.scene = new THREE.Scene();
+    // 純黑色背景,跟用户给的第4张图一致
     this.scene.background = new THREE.Color(0x000000);
 
     this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 500);
@@ -234,10 +420,11 @@ class PhotoSphere {
     this.renderer.setSize(w, h);
     this.container.appendChild(this.renderer.domElement);
 
-    this.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+    // 更柔和的光照,突出白色拍立得边框
+    this.scene.add(new THREE.AmbientLight(0xffffff, 1.15));
 
-    this.stars = this.createStars();
-    this.scene.add(this.stars);
+    // 移除星星,保持纯黑,更接近用户给的参考图
+    this.stars = null;
 
     this.sphereGroup = new THREE.Group();
     this.scene.add(this.sphereGroup);
@@ -360,72 +547,162 @@ class PhotoSphere {
   }
 
   createPhotoTile(photo, w, h) {
+    // 拍立得比例: 照片部分 + 底部白色留白
+    // 参考用户图 3: 白色边框 + 照片圆角 + 底部留白
     const canvas = document.createElement('canvas');
-    canvas.width = 320; canvas.height = 432;
+    const CW = 320;
+    // 拍立得经典比例: 宽高约 3:4,底部留白 15%~20%
+    const CH = Math.round(CW * 1.28);
+    canvas.width = CW;
+    canvas.height = CH;
     const ctx = canvas.getContext('2d');
 
-    const hue = (parseInt((photo.id || '').replace(/\D/g, '')) || 1) * 47 % 360;
-    const grad = ctx.createLinearGradient(0, 0, 320, 432);
-    grad.addColorStop(0, `hsl(${hue}, 30%, 35%)`);
-    grad.addColorStop(1, `hsl(${(hue + 30) % 360}, 25%, 20%)`);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 320, 432);
+    // 1) 白色拍立得底纸(整张底色白)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CW, CH);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(12, 12, 296, 408);
+    // 2) 轻微拍立得阴影(软阴影效果,用外层发光)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, CW - 2, CH - 2);
+    ctx.restore();
 
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = '600 24px "Noto Serif TC", serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(photo.title || '照片', 160, 216);
+    // 3) 照片区域(上下左右留白色边距,上边距约 6%,下边距约 22%(留白写字区),左右约 6%)
+    const photoMarginX = Math.round(CW * 0.06);
+    const photoMarginTop = Math.round(CH * 0.055);
+    const photoW = CW - photoMarginX * 2;
+    const photoH = Math.round(CH * 0.72); // 剩下留给底部留白
 
+    // 先画个浅灰底防图片未加载的空白
+    ctx.fillStyle = '#f0f0f0';
+    this.roundRect(ctx, photoMarginX, photoMarginTop, photoW, photoH, 4);
+    ctx.fill();
+
+    // 4) 先画占位(如果图片没加载好,就保持浅灰底,边框仍保持拍立得白边)
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
     texture.colorSpace = THREE.SRGBColorSpace;
 
     const mat = new THREE.MeshBasicMaterial({ map: texture });
-    const geo = new THREE.PlaneGeometry(w, h);
+    const geo = new THREE.PlaneGeometry(w, h * (CH / CW));
     const mesh = new THREE.Mesh(geo, mat);
 
+    // 5) 加载真实照片,画进照片区域
     const src = photo.src || photo.dataURL;
     if (src) {
       const loader = new THREE.TextureLoader();
       loader.setCrossOrigin('anonymous');
       loader.load(src,
         (tex) => {
-          tex.minFilter = THREE.LinearFilter;
-          tex.colorSpace = THREE.SRGBColorSpace;
-          mat.map = tex;
-          mat.needsUpdate = true;
+          // 取得圖片的原始 DOM image
+          const img = tex.image;
+          if (img && img.complete) {
+            this.drawPolaroidPhoto(ctx, img, CW, CH, photoMarginX, photoMarginTop, photoW, photoH);
+            texture.needsUpdate = true;
+          }
+          tex.dispose(); // 用完就釋放原始 texture,我們只要 canvas 版
         },
         undefined,
-        () => { /* 失敗就保持佔位 */ }
+        () => {
+          // 失敗:保持白色边的占位卡,这样球体不会空
+        }
       );
     }
 
     return mesh;
   }
 
+  // 画圆角矩形路径
+  roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // 在拍立得底纸上画真实照片(按 cover 方式裁剪,保持圆角)
+  drawPolaroidPhoto(ctx, img, CW, CH, marginX, marginTop, photoW, photoH) {
+    // 1) 清掉旧的浅灰底,重新画一遍白底确保
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CW, CH);
+
+    ctx.save();
+    // 照片圆角裁剪区
+    this.roundRect(ctx, marginX, marginTop, photoW, photoH, 4);
+    ctx.clip();
+
+    // object-fit: cover 算法
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const imgRatio = iw / ih;
+    const areaRatio = photoW / photoH;
+    let sx, sy, sw, sh;
+    if (imgRatio > areaRatio) {
+      // 图更宽:按高匹配,裁两边
+      sh = ih;
+      sw = ih * areaRatio;
+      sx = (iw - sw) / 2;
+      sy = 0;
+    } else {
+      // 图更高:按宽匹配,裁上下
+      sw = iw;
+      sh = iw / areaRatio;
+      sx = 0;
+      sy = (ih - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, marginX, marginTop, photoW, photoH);
+    ctx.restore();
+  }
+
   createTextTile(text, w, h) {
-    const cw = 512, ch = 200;
+    // 文字也改成拍立得风格的白色卡片(带圆角)
+    const cw = 320;
+    const ch = Math.round(cw * 1.15); // 文字卡片比照片稍微方一点
     const canvas = document.createElement('canvas');
-    canvas.width = cw; canvas.height = ch;
+    canvas.width = cw;
+    canvas.height = ch;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillRect(0, 0, cw, ch);
+    // 1) 白色拍立得底纸
+    ctx.fillStyle = '#ffffff';
+    // 圆角外框
+    this.roundRect(ctx, 0, 0, cw, ch, 8);
+    ctx.fill();
+
+    // 2) 轻微阴影
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 2;
+    this.roundRect(ctx, 1, 1, cw - 2, ch - 2, 8);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3) 内部文字显示区(留白 + 圆角黑线框作为设计感)
+    const padX = Math.round(cw * 0.07);
+    const padY = Math.round(ch * 0.08);
+    const innerW = cw - padX * 2;
+    const innerH = ch - padY * 2;
 
     ctx.fillStyle = '#111';
-    ctx.font = '600 30px "Noto Serif TC", serif';
+    ctx.font = '600 24px "Noto Serif TC", serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    const lines = text.split('\n');
-    const lineH = 38;
-    const startY = ch / 2 - ((lines.length - 1) * lineH) / 2;
-    lines.forEach((line, i) => {
+    // 简单换行: 每 10 个中文字或 20 个英文字切一行
+    const wrapped = wrapText(text, 11);
+    const lineH = 30;
+    const totalH = wrapped.length * lineH;
+    // 垂直居中
+    const startY = ch / 2 - totalH / 2 + lineH / 2;
+
+    wrapped.forEach((line, i) => {
+      // 字号自适应: 如果行数太多,稍微缩小
+      const fs = wrapped.length > 4 ? 20 : (wrapped.length > 2 ? 22 : 24);
+      ctx.font = `600 ${fs}px "Noto Serif TC", serif`;
       ctx.fillText(line, cw / 2, startY + i * lineH);
     });
 
@@ -984,6 +1261,8 @@ class App {
     this.sphere = null;
     this.flatView = null;
     this.currentMode = 'sphere';
+    this._lastContentHash = '';
+    this._refreshTimer = null;
 
     document.getElementById('add-button').addEventListener('click', () => {
       this.uploadModal.open();
@@ -1000,10 +1279,53 @@ class App {
       if (!this.sphere) this.sphere = new PhotoSphere();
       if (!this.flatView) this.flatView = new FlatGridView();
       this.applyMode('sphere');
+      // 进入球馆后立刻做一次内容刷新(优先从 GitHub 目录加载最新)
+      await this.refreshIfChanged();
+      // 每 60 秒检查一次 GitHub 仓库 photos/texts 是否有新增(用户刚传完图就能看到)
+      this.startPeriodicRefresh();
+    });
+
+    // visibilitychange:用户切回标签页时立刻刷新一次
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') this.refreshIfChanged();
     });
 
     window.addEventListener('load', () => this.onLoad());
     window.app = this;
+  }
+
+  // 计算内容的简单 hash,用于判断是否有新增/变更
+  _hashContent(photos, quotes) {
+    const joined = [
+      photos.map(p => `${p.id}${p.src || ''}`).join('|'),
+      quotes.map(q => `${q.id}${q.text?.slice(0, 20) || ''}`).join('|'),
+    ].join('||');
+    let h = 0;
+    for (let i = 0; i < joined.length; i++) h = ((h << 5) - h + joined.charCodeAt(i)) | 0;
+    return String(h);
+  }
+
+  async refreshIfChanged() {
+    try {
+      const repo = await loadRepoContents();
+      // 如果仓库里完全没东西,就别刷新(以免用默认占位重建一遍)
+      if ((repo.photos?.length || 0) + (repo.quotes?.length || 0) === 0) return;
+
+      const h = this._hashContent(repo.photos || [], repo.quotes || []);
+      if (h && h !== this._lastContentHash) {
+        console.log(`[App] 检测到新内容(hash ${this._lastContentHash} -> ${h}),重建视图`);
+        this._lastContentHash = h;
+        if (this.sphere) await this.sphere.loadData();
+        if (this.flatView) await this.flatView.loadData();
+      }
+    } catch (e) {
+      console.warn('[App] 刷新失败(忽略):', e?.message || e);
+    }
+  }
+
+  startPeriodicRefresh() {
+    if (this._refreshTimer) clearInterval(this._refreshTimer);
+    this._refreshTimer = setInterval(() => this.refreshIfChanged(), 60 * 1000);
   }
 
   switchMode(mode) {

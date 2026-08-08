@@ -1,0 +1,5 @@
+{
+  "photos": [],
+  "texts": [],
+  "_note": "把照片放到仓库的 photos/ 文件夹,把 .txt 放到 texts/ 文件夹,网站会自动加载。这个文件作为 GitHub API 失败时的 fallback。"
+}

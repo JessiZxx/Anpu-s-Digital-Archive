@@ -120,8 +120,21 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.5) 100%);
+  background: none;
   pointer-events: none;
+}
+
+/* Fullscreen transparent hotzone (用户图片已包含文字按钮) */
+.fullscreen-hotzone {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  cursor: pointer;
+  text-decoration: none;
+  opacity: 0;
+  animation: fadeIn 0.6s var(--ease) 0.3s forwards;
 }
 
 /* ==================== Stage 1: Home ==================== */
