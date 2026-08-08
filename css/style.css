@@ -232,7 +232,6 @@ a, button { cursor: pointer; }
   height: 100%;
   object-fit: cover;
   display: block;
-  filter: grayscale(.08);
 }
 .flat-card-text {
   padding: 24px;
@@ -241,9 +240,8 @@ a, button { cursor: pointer; }
   justify-content: center;
   align-items: center;
   text-align: center;
-  background:
-    radial-gradient(ellipse at 30% 20%, #fff 0%, #ececec 100%);
-  color: #0a0a0a;
+  background: #111;
+  color: #e8e8e8;
   width: 100%;
   height: 100%;
 }

@@ -1,101 +1,36 @@
 /* ============================================================
  * 素材配置入口 —— 用戶可輕鬆新增照片 / 語錄
- * 如果 localStorage 有自訂存檔 (ADAR_ITEMS_v1)，會優先加載。
- * 音頻檔放 assets/audio/ 後，在 quotes 裡填對應路徑即可。
- * 圖片檔放 photos/ 後，在 photos 裡填對應路徑即可。
+ *
+ * ★ 重要：所有素材必須本地託管，禁止使用外部 URL
+ *
+ * 使用方式：
+ *   1. 照片放入 photos/ 目錄 → 在 photos 陣列新增一行
+ *   2. 錄音放入 assets/audio/ → 在 quotes 的 audio 填路徑
+ *   3. 也可以在網頁內直接用 + 按鈕上傳（存瀏覽器 localStorage）
  * ============================================================ */
 (function () {
   window.ARCHIVE_CONFIG = {
 
     backgrounds: {
-      // Stage 1 & 2 的背景圖（用戶原圖）
+      // Stage 1 & 2 的背景圖（用戶原圖，直接使用）
       home:    'assets/pages/home-bg-user.jpg',
       welcome: 'assets/pages/welcome-bg-user.jpg'
     },
 
     /* -------------------------------------------------------------
-     * 照片：在 photos/ 目錄放入圖片，然後依照下方格式新增即可
+     * 照片：將安溥的照片放入 photos/ 目錄，然後按下方格式新增
+     * src 填本地路徑，例如 'photos/anpu_01.jpg'
+     * 後續陸續提供照片時，只需在這裡加一行即可
      * ----------------------------------------------------------- */
     photos: [
-      {
-        id: 'p_001',
-        src: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
-        title: '關於我愛你'
-      },
-      {
-        id: 'p_002',
-        src: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
-        title: '風塵之中'
-      },
-      {
-        id: 'p_003',
-        src: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80',
-        title: '黑夜時'
-      },
-      {
-        id: 'p_004',
-        src: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
-        title: '不為誰而作的歌'
-      },
-      {
-        id: 'p_005',
-        src: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
-        title: '寧夏'
-      },
-      {
-        id: 'p_006',
-        src: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=800&q=80',
-        title: '人間'
-      },
-      {
-        id: 'p_007',
-        src: 'https://images.unsplash.com/photo-1506863530036-1efeddceb9e4?auto=format&fit=crop&w=800&q=80',
-        title: '思念'
-      },
-      {
-        id: 'p_008',
-        src: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80',
-        title: '歲月'
-      },
-      {
-        id: 'p_009',
-        src: 'https://images.unsplash.com/photo-1485893086445-ed75865251e0?auto=format&fit=crop&w=800&q=80',
-        title: '城市夜'
-      },
-      {
-        id: 'p_010',
-        src: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=800&q=80',
-        title: '海邊'
-      },
-      {
-        id: 'p_011',
-        src: 'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=800&q=80',
-        title: '雨天'
-      },
-      {
-        id: 'p_012',
-        src: 'https://images.unsplash.com/photo-1475178622784-2e0f12018796?auto=format&fit=crop&w=800&q=80',
-        title: '微光'
-      },
-      {
-        id: 'p_013',
-        src: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=800&q=80',
-        title: '旅程'
-      },
-      {
-        id: 'p_014',
-        src: 'https://images.unsplash.com/photo-1516826957135-700dedea698c?auto=format&fit=crop&w=800&q=80',
-        title: '回家'
-      },
-      {
-        id: 'p_015',
-        src: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=800&q=80',
-        title: '時光'
-      }
+      // 照片待用戶提供，以下為預留範例格式：
+      // { id: 'p_001', src: 'photos/anpu_01.jpg', title: '關於我愛你' },
+      // { id: 'p_002', src: 'photos/anpu_02.jpg', title: '風塵之中' },
     ],
 
     /* -------------------------------------------------------------
-     * 語錄：文字 + 可選音檔（放入 assets/audio/）
+     * 語錄：安溥的文字 + 可選配對錄音（放入 assets/audio/）
+     * audio 填本地路徑，例如 'assets/audio/quote_001.mp3'
      * ----------------------------------------------------------- */
     quotes: [
       {
@@ -121,6 +56,21 @@
       {
         id: 'q_005',
         text: '我們終將失散，而我還在想，我是否曾以愛，為你命名。',
+        audio: ''
+      },
+      {
+        id: 'q_006',
+        text: '所有的失去，都是為了騰出空間給更好的到來。',
+        audio: ''
+      },
+      {
+        id: 'q_007',
+        text: '如果你因為錯過太陽而哭泣，那麼你也將錯過群星。',
+        audio: ''
+      },
+      {
+        id: 'q_008',
+        text: '世界很暗，但你來了。',
         audio: ''
       }
     ]

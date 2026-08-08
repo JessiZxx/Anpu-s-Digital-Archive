@@ -679,71 +679,57 @@ const globeApp = {
   },
 
   cardTextureForPhoto(src) {
-    // 拍立得卡：白底 + 上方圖 + 下方標題列
-    const W = 512, H = 680;
-    const c = document.createElement('canvas');
-    c.width = W; c.height = H;
-    const ctx = c.getContext('2d');
-
-    // 白色卡底 (微拍立得陰影感)
-    const r = 26;
-    ctx.fillStyle = '#f8f8f6';
-    roundRect(ctx, 0, 0, W, H, r);
-    ctx.fill();
-
-    // 圖片區塊
-    const pad = 24;
-    const imgTop = pad;
-    const imgH = 516;
+    // Becky 風格：直接用原圖作為紋理，不加白底邊框
     return new Promise(resolve => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        ctx.save();
-        // 裁切圖片框
-        roundRect(ctx, pad, imgTop, W - pad * 2, imgH, 12);
-        ctx.clip();
-        // cover fit
-        const iw = W - pad * 2, ih = imgH;
-        const scale = Math.max(iw / img.width, ih / img.height);
-        const dw = img.width * scale, dh = img.height * scale;
-        const dx = pad + (iw - dw) / 2;
-        const dy = imgTop + (ih - dh) / 2;
-        ctx.drawImage(img, dx, dy, dw, dh);
-        ctx.restore();
-        // 底部微灰
-        ctx.fillStyle = 'rgba(0,0,0,0.04)';
-        roundRect(ctx, pad, imgTop + imgH + 8, W - pad * 2, H - pad - (imgTop + imgH + 8), 10);
-        ctx.fill();
-
-        const tex = new THREE.CanvasTexture(c);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.anisotropy = 8;
-        resolve(tex);
-      };
-      img.onerror = () => { resolve(fallbackPhotoTexture(W, H, ctx, r, pad, imgTop, imgH)); };
-      img.src = src;
+      const loader = new THREE.TextureLoader();
+      loader.load(
+        src,
+        tex => {
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.anisotropy = 8;
+          resolve(tex);
+        },
+        undefined,
+        () => {
+          // 載入失敗：生成暗色佔位紋理
+          const c = document.createElement('canvas');
+          c.width = 256; c.height = 340;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillRect(0, 0, 256, 340);
+          ctx.fillStyle = '#555';
+          ctx.font = '500 20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('影像', 128, 170);
+          const tex = new THREE.CanvasTexture(c);
+          tex.colorSpace = THREE.SRGBColorSpace;
+          resolve(tex);
+        }
+      );
     });
   },
 
   cardTextureForText(text, title) {
+    // 暗色風格語錄卡（與球體深色調統一）
     const W = 512, H = 680;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const ctx = c.getContext('2d');
-    const r = 26;
-    ctx.fillStyle = '#f3f2ee';
-    roundRect(ctx, 0, 0, W, H, r);
-    ctx.fill();
 
-    // 邊框裝飾
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-    ctx.lineWidth = 2;
-    roundRect(ctx, 32, 32, W - 64, H - 128, 14);
+    // 深色半透明底
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(0, 0, W, H);
+
+    // 細邊框
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1.5;
+    const r = 16;
+    roundRect(ctx, 28, 28, W - 56, H - 56, r);
     ctx.stroke();
 
-    // 文字繪製 (最多 4 行)
-    ctx.fillStyle = '#1a1a1a';
+    // 文字繪製
+    ctx.fillStyle = '#e8e8e8';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const lines = splitLines(text || '', 14);
@@ -751,15 +737,10 @@ const globeApp = {
     ctx.font = `500 ${baseSize}px -apple-system, "PingFang TC", "Microsoft JhengHei", serif`;
     const lineGap = baseSize * 1.5;
     const totalH = lines.length * lineGap;
-    const startY = (H - 96) / 2 - totalH / 2 + lineGap / 2;
+    const startY = H / 2 - totalH / 2 + lineGap / 2;
     lines.forEach((ln, i) => {
       ctx.fillText(ln, W / 2, startY + i * lineGap);
     });
-
-    // 底部標題
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.font = `600 22px -apple-system, "PingFang TC", sans-serif`;
-    ctx.fillText((title || '').slice(0, 18), W / 2, H - 60);
 
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
