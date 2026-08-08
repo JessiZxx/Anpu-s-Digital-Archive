@@ -4,9 +4,10 @@
  * ★ 重要：所有素材必須本地託管，禁止使用外部 URL
  *
  * 使用方式：
- *   1. 照片放入 photos/ 目錄 → 在 photos 陣列新增一行
- *   2. 錄音放入 assets/audio/ → 在 quotes 的 audio 填路徑
- *   3. 也可以在網頁內直接用 + 按鈕上傳（存瀏覽器 localStorage）
+ *   1. 照片放入 uploads/photos/   → 在 photos 陣列新增一行
+ *   2. 錄音放入 uploads/audio/    → 在 quotes 的 audio 填路徑
+ *   3. 文字放入 uploads/texts/    → 在 texts 陣列新增一行
+ *   4. 也可以在網頁內直接用 + 按鈕上傳（存瀏覽器 localStorage）
  * ============================================================ */
 (function () {
   window.ARCHIVE_CONFIG = {
@@ -18,19 +19,19 @@
     },
 
     /* -------------------------------------------------------------
-     * 照片：將安溥的照片放入 photos/ 目錄，然後按下方格式新增
-     * src 填本地路徑，例如 'photos/anpu_01.jpg'
+     * 照片：將安溥的照片放入 uploads/photos/ 目錄，然後按下方格式新增
+     * src 填本地路徑，例如 'uploads/photos/anpu_01.jpg'
      * 後續陸續提供照片時，只需在這裡加一行即可
      * ----------------------------------------------------------- */
     photos: [
       // 照片待用戶提供，以下為預留範例格式：
-      // { id: 'p_001', src: 'photos/anpu_01.jpg', title: '關於我愛你' },
-      // { id: 'p_002', src: 'photos/anpu_02.jpg', title: '風塵之中' },
+      // { id: 'p_001', src: 'uploads/photos/anpu_01.jpg', title: '關於我愛你' },
+      // { id: 'p_002', src: 'uploads/photos/anpu_02.jpg', title: '風塵之中' },
     ],
 
     /* -------------------------------------------------------------
-     * 語錄：安溥的文字 + 可選配對錄音（放入 assets/audio/）
-     * audio 填本地路徑，例如 'assets/audio/quote_001.mp3'
+     * 語錄：安溥的文字 + 可選配對錄音（放入 uploads/audio/）
+     * audio 填本地路徑，例如 'uploads/audio/quote_001.mp3'
      * ----------------------------------------------------------- */
     quotes: [
       {
