@@ -181,17 +181,46 @@ const audioPlayer = {
 audioPlayer.bindEvents();
 
 // ==============================================================
-//  4. Detail Panel 彈窗（照片/語錄共用）
+//  4a. Photo Lightbox (全屏大圖預覽)
+// ==============================================================
+const photoLightbox = {
+  el: document.getElementById('photo-lightbox'),
+  img: document.getElementById('lightbox-img-el'),
+  closeBtn: document.getElementById('lightbox-close'),
+
+  bind() {
+    const close = () => this.close();
+    this.closeBtn.addEventListener('click', close);
+    this.el.addEventListener('click', e => {
+      if (e.target === this.el) close();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && this.el.classList.contains('open')) close();
+    });
+  },
+
+  show(src) {
+    this.img.src = src;
+    this.el.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  },
+
+  close() {
+    this.el.classList.remove('open');
+    this.img.removeAttribute('src');
+    document.body.style.overflow = '';
+  }
+};
+photoLightbox.bind();
+
+// ==============================================================
+//  4b. Quote Modal (語錄彈窗)
 // ==============================================================
 const detailPanel = {
   el: document.getElementById('detail-panel'),
   backdrop: document.getElementById('detail-backdrop'),
   closeBtn: document.getElementById('detail-close'),
-  imgWrap: document.getElementById('detail-img'),
-  img: document.getElementById('detail-img-el'),
-  title: document.querySelector('.dp-title'),
   body: document.querySelector('.dp-body'),
-  cat: document.querySelector('.dp-cat'),
   audioBox: document.getElementById('detail-audio'),
   editBtn: document.getElementById('detail-edit'),
   deleteBtn: document.getElementById('detail-delete'),
@@ -219,7 +248,6 @@ const detailPanel = {
       const newTitle = this.titleInput.value.trim();
       if (!newTitle) return;
       this.currentItem.title = newTitle;
-      this.title.textContent = newTitle;
       saveItems(appData.items);
       globeApp.updateCardTitle(this.currentItem);
       flatView.render();
@@ -231,7 +259,6 @@ const detailPanel = {
       if (!confirm('確定要從藏館中刪除這個內容嗎？（此動作無法復原）')) return;
       const id = this.currentItem.id;
       appData.items = appData.items.filter(it => it.id !== id);
-      // 若是用戶上傳的照片 (localStorage base64) 清理
       if (this.currentItem._imgLsKey) {
         try { localStorage.removeItem(this.currentItem._imgLsKey); } catch (_) {}
       }
@@ -245,23 +272,8 @@ const detailPanel = {
   show(item) {
     this.currentItem = item;
     this.open = true;
+    this.body.textContent = item.text || '';
 
-    // 圖片 or 無圖
-    if (item.type === 'photo' && item.src) {
-      this.imgWrap.classList.remove('has-no-image');
-      this.img.style.display = '';
-      this.img.src = item.src;
-    } else {
-      this.imgWrap.classList.add('has-no-image');
-      this.img.style.display = 'none';
-      this.img.removeAttribute('src');
-    }
-
-    this.cat.textContent = item.type === 'photo' ? '球覽 · 影像' : '球覽 · 語錄';
-    this.title.textContent = item.title || (item.type === 'text' ? (item.text || '').slice(0, 10) : '未命名');
-    this.body.textContent = (item.type === 'text' && item.text) ? item.text : '';
-
-    // 音頻：text 類型且有 audio 才顯示
     if (item.type === 'text' && item.audio) {
       this.audioBox.style.display = 'flex';
       audioPlayer.setSource(item.audio);
@@ -270,9 +282,7 @@ const detailPanel = {
       audioPlayer.setSource(null);
     }
 
-    // 關閉標題編輯器
     this.titleEditor.classList.remove('open');
-
     this.el.classList.add('open');
     document.body.style.overflow = 'hidden';
   },
@@ -528,7 +538,13 @@ const flatView = {
             <div class="flat-card-title">${(item.title||'').replace(/</g,'&lt;').slice(0, 12)}</div>
           </div>`;
       }
-      card.addEventListener('click', () => detailPanel.show(item));
+      card.addEventListener('click', () => {
+        if (item.type === 'photo') {
+          photoLightbox.show(item.src);
+        } else {
+          detailPanel.show(item);
+        }
+      });
       this.track.appendChild(card);
     });
   }
@@ -619,63 +635,35 @@ const globeApp = {
   },
 
   buildCoreSphere() {
-    const R = 3.6;
+    const R = 3.25;
 
-    // Outer glass sphere
+    // Outer glass sphere (磨砂黑玻璃)
     const geo = new THREE.SphereGeometry(R, 80, 80);
     const mat = new THREE.MeshPhysicalMaterial({
-      color: 0x0a0a0a,
-      metalness: 0.08,
-      roughness: 0.18,
-      transmission: 0.82,
-      thickness: 0.6,
-      ior: 1.45,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.25,
-      opacity: 0.55,
+      color: 0x08080a,
+      metalness: 0.05,
+      roughness: 0.35,
+      transmission: 0.55,
+      thickness: 0.4,
+      ior: 1.4,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.4,
+      opacity: 0.72,
       transparent: true,
-      side: THREE.FrontSide,
-      envMapIntensity: 1.1
+      side: THREE.FrontSide
     });
     this.sphereMesh = new THREE.Mesh(geo, mat);
     this.sphereMesh.renderOrder = 1;
     this.scene.add(this.sphereMesh);
 
-    // Inner glow sphere
+    // Inner dark sphere
     const g2 = new THREE.SphereGeometry(R * 0.92, 48, 48);
     const m2 = new THREE.MeshBasicMaterial({
-      color: 0x0e0e12,
-      transparent: true,
-      opacity: 0.85,
+      color: 0x060608,
       side: THREE.BackSide
     });
     const inner = new THREE.Mesh(g2, m2);
     this.scene.add(inner);
-
-    // 細點陣球面 (裝飾)
-    const dotGeo = new THREE.BufferGeometry();
-    const N = 650;
-    const pos = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      const phi = Math.acos(1 - 2 * (i + 0.5) / N);
-      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-      const r = R * 1.015;
-      pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-      pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
-      pos[i*3+2] = r * Math.cos(phi);
-    }
-    dotGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const dotMat = new THREE.PointsMaterial({
-      size: 0.028,
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.38,
-      sizeAttenuation: true,
-      depthWrite: false
-    });
-    const dots = new THREE.Points(dotGeo, dotMat);
-    dots.renderOrder = 2;
-    this.scene.add(dots);
   },
 
   cardTextureForPhoto(src) {
@@ -691,51 +679,34 @@ const globeApp = {
         },
         undefined,
         () => {
-          // 載入失敗：生成暗色佔位紋理
-          const c = document.createElement('canvas');
-          c.width = 256; c.height = 340;
-          const ctx = c.getContext('2d');
-          ctx.fillStyle = '#1a1a1a';
-          ctx.fillRect(0, 0, 256, 340);
-          ctx.fillStyle = '#555';
-          ctx.font = '500 20px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('影像', 128, 170);
-          const tex = new THREE.CanvasTexture(c);
-          tex.colorSpace = THREE.SRGBColorSpace;
-          resolve(tex);
+          resolve(fallbackPhotoTexture(512, 512));
         }
       );
     });
   },
 
   cardTextureForText(text, title) {
-    // 暗色風格語錄卡（與球體深色調統一）
-    const W = 512, H = 680;
+    // 深色方形語錄卡
+    const W = 512, H = 512;
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
     const ctx = c.getContext('2d');
 
-    // 深色半透明底
-    ctx.fillStyle = '#111111';
+    ctx.fillStyle = '#141414';
     ctx.fillRect(0, 0, W, H);
 
-    // 細邊框
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1.5;
-    const r = 16;
-    roundRect(ctx, 28, 28, W - 56, H - 56, r);
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, 24, 24, W - 48, H - 48, 14);
     ctx.stroke();
 
-    // 文字繪製
     ctx.fillStyle = '#e8e8e8';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const lines = splitLines(text || '', 14);
-    const baseSize = lines.length > 3 ? 34 : (lines.length > 2 ? 40 : 48);
+    const lines = splitLines(text || '', 10);
+    const baseSize = lines.length > 3 ? 36 : (lines.length > 2 ? 44 : 54);
     ctx.font = `500 ${baseSize}px -apple-system, "PingFang TC", "Microsoft JhengHei", serif`;
-    const lineGap = baseSize * 1.5;
+    const lineGap = baseSize * 1.55;
     const totalH = lines.length * lineGap;
     const startY = H / 2 - totalH / 2 + lineGap / 2;
     lines.forEach((ln, i) => {
@@ -750,8 +721,8 @@ const globeApp = {
 
   buildCards(items) {
     if (!items || !items.length) return;
-    // 球面 Fibonacci 分布
-    const R = 3.9;         // 縮小卡片分佈半徑，讓卡片更貼近核心球
+    // 球面 Fibonacci 均匀分布，卡片间距拉开
+    const R = 3.45;
     const startIdx = this.cardMeshes.length;
     const total = startIdx + items.length;
 
@@ -775,32 +746,25 @@ const globeApp = {
     });
   },
 
-  addCardMesh(item, tex, pos) {
-    // 縮小卡片尺寸（從 2.2x2.9 調整為 1.3x1.7）
-    const W = 1.3, H = 1.7; 
+  addCardMesh(item, tex, pos, isNew = true) {
+    // 1:1 Becky 風格：小尺寸方形卡片
+    const W = 0.95, H = 0.95;
     const geo = new THREE.PlaneGeometry(W, H);
-    const mat = new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshBasicMaterial({
       map: tex,
-      roughness: 0.75,
-      metalness: 0.04,
       transparent: true,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.copy(pos);
 
     // 朝向球心
     const dir = pos.clone().normalize();
-    const up = new THREE.Vector3(0, 1, 0);
     const q = new THREE.Quaternion().setFromUnitVectors(
       new THREE.Vector3(0, 0, 1), dir
     );
     mesh.quaternion.copy(q);
-    // 加入些微隨機傾斜 (Becky 錯落感)
-    const r1 = (Math.random() - 0.5) * 0.28;
-    const r2 = (Math.random() - 0.5) * 0.28;
-    mesh.rotateZ(r1);
-    mesh.rotateX(r2 * 0.6);
 
     mesh.userData.item = item;
     mesh.renderOrder = 10;
@@ -910,7 +874,12 @@ const globeApp = {
       this.setPointer(e);
       const card = this.pickCard();
       if (card && card.userData.item) {
-        detailPanel.show(card.userData.item);
+        const item = card.userData.item;
+        if (item.type === 'photo') {
+          photoLightbox.show(item.src);
+        } else {
+          detailPanel.show(item);
+        }
       }
     }
   },
@@ -987,17 +956,18 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function fallbackPhotoTexture(W, H, ctx, r, pad, imgTop, imgH) {
-  // 灰色底 + 標題文字
-  ctx.fillStyle = '#222';
-  roundRect(ctx, pad, imgTop, W - pad * 2, imgH, 12);
-  ctx.fill();
-  ctx.fillStyle = '#ddd';
-  ctx.font = '500 26px -apple-system, sans-serif';
+function fallbackPhotoTexture(W, H) {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#666';
+  ctx.font = '500 24px -apple-system, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('影像未載入', W / 2, (imgTop + imgTop + imgH) / 2);
-  const tex = new THREE.CanvasTexture(ctx.canvas);
+  ctx.fillText('影像未載入', W / 2, H / 2);
+  const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
   return tex;

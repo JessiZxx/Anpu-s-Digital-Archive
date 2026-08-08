@@ -71,51 +71,45 @@
     </button>
   </div>
 
-  <!-- ==================== Detail Panel (彈窗) ==================== -->
-  <div id="detail-panel" class="detail-panel">
+  <!-- ==================== Photo Lightbox (全屏大圖預覽) ==================== -->
+  <div id="photo-lightbox" class="photo-lightbox">
+    <button id="lightbox-close" class="lightbox-close" aria-label="關閉">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="lightbox-img-wrap">
+      <img id="lightbox-img-el" src="" alt="" draggable="false">
+    </div>
+  </div>
+
+  <!-- ==================== Quote Modal (語錄彈窗) ==================== -->
+  <div id="detail-panel" class="detail-panel quote-modal">
     <div id="detail-backdrop" class="detail-backdrop"></div>
     <div class="detail-content">
 
       <button id="detail-close" class="detail-close" aria-label="關閉">
-        <svg viewBox="0 0 24 24" width="18" height="18">
-          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
 
-      <div id="detail-img" class="detail-img-wrap">
-        <img id="detail-img-el" src="" alt="" draggable="false">
-      </div>
-
       <div id="detail-content" class="detail-text">
-        <div class="dp-cat">球覽</div>
-        <h2 class="dp-title">標題</h2>
         <p class="dp-body"></p>
       </div>
 
-      <!-- 編輯 / 刪除按鈕 -->
       <div class="detail-actions">
-        <button id="detail-edit" class="detail-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M12 20h9" stroke-linecap="round"/>
-            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          編輯標題
-        </button>
-        <button id="detail-delete" class="detail-btn danger">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <polyline points="3 6 5 6 21 6" stroke-linecap="round"/>
-            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          刪除
-        </button>
+        <button id="detail-edit" class="detail-btn">編輯</button>
+        <button id="detail-delete" class="detail-btn danger">刪除</button>
       </div>
       <div id="detail-title-editor" class="title-editor">
         <input id="detail-title-input" type="text" placeholder="輸入新標題">
         <button id="detail-save-title">儲存</button>
       </div>
 
-      <!-- 音頻播放器 (僅語錄有 audio 欄位時顯示) -->
+      <!-- 音頻播放器 -->
       <div id="detail-audio" class="detail-audio" style="display:none;">
         <button id="audio-play-btn" class="audio-play-btn" aria-label="播放錄音">
           <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -198,7 +192,7 @@
   }
   </script>
 
-  <script type="module" src="js/main.js?v=20260808c"></script>
+  <script type="module" src="js/main.js?v=20260808d"></script>
 
   <script>
     (function(){
