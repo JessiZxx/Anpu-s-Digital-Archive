@@ -153,6 +153,29 @@ html, body {
   border-color: rgba(255,255,255,0.45);
 }
 
+/* ============ Stage 3 「下一步」按鈕（進入媒體區） ============ */
+.next-btn {
+  position: absolute;
+  bottom: 4vh;
+  right: 5vw;
+  z-index: 10;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+.next-btn:active {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.55);
+  transform: scale(0.97);
+}
+
 /* ============ 圖片預覽彈窗 ============ */
 .photo-lightbox {
   position: fixed;
@@ -218,4 +241,413 @@ html, body {
     width: 120px;
     height: 56px;
   }
+}
+
+/* ============================================================
+ * Stage 4: 媒體滑動區（深色 Anpu 美學）
+ * 結構參考 beckyentertainment.co/media：水平滑動卡片
+ * ============================================================ */
+#media-stage {
+  background: #0a0a0c;
+  padding: 0;
+}
+
+/* 頂部頁頭 */
+.media-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 5vh 5vw 0 70px;  /* 預留左上返回按鈕空間 */
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+.media-header > * { pointer-events: auto; }
+
+.media-title {
+  font-size: clamp(1.8rem, 4.5vw, 3.4rem);
+  font-weight: 200;
+  letter-spacing: 0.3em;
+  color: #fff;
+  line-height: 1;
+}
+.media-subtitle {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  letter-spacing: 0.25em;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+}
+
+/* 瀏覽 / 管理 切換 */
+.media-toggle {
+  display: inline-flex;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(6px);
+}
+.media-toggle-btn {
+  padding: 8px 18px;
+  background: transparent;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.78rem;
+  letter-spacing: 0.15em;
+  border: none;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+.media-toggle-btn.is-active {
+  background: #fff;
+  color: #0a0a0c;
+}
+
+/* 滑動容器：置中、垂直置中、橫向滾動 */
+.media-slider-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 5vw;
+  overflow: hidden;
+}
+.media-slider {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 100%;
+  width: 100%;
+  padding: 6vh 0;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.media-slider::-webkit-scrollbar { display: none; }
+
+/* 媒體卡片：320×400 圖 + 標題 */
+.media-slide {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: clamp(220px, 28vw, 320px);
+  scroll-snap-align: start;
+  animation: media-fade-in 0.5s ease both;
+  position: relative;
+}
+@keyframes media-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.media-slide-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background: #16161a;
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.35s ease, border-color 0.25s ease;
+}
+.media-slide-image-wrap:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,255,255,0.2);
+}
+.media-slide-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.media-slide-image-wrap.is-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 24px;
+  background: linear-gradient(135deg, #1a1a1f 0%, #0d0d10 100%);
+}
+.media-slide-image-wrap.is-text .media-slide-quote {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+}
+
+.media-slide-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: rgba(255,255,255,0.85);
+  text-transform: uppercase;
+  word-break: break-word;
+  line-height: 1.5;
+}
+.media-slide-title.is-muted { color: rgba(255,255,255,0.3); }
+
+/* 管理模式：卡片右上角顯示刪除按鈕 */
+.media-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.media-slide.is-manage .media-delete-btn { opacity: 1; }
+.media-delete-btn:active {
+  background: #c0392b;
+  transform: scale(0.9);
+}
+
+.media-slide.is-manage {
+  outline: 1px dashed rgba(255,255,255,0.18);
+  outline-offset: 4px;
+}
+
+/* 管理工具列（底部） */
+.media-toolbar {
+  position: absolute;
+  bottom: 4vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+}
+.media-toolbar[hidden] { display: none !important; }
+
+.media-upload-btn,
+.media-add-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: #fff;
+  color: #0a0a0c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.media-upload-btn:hover,
+.media-add-text-btn:hover {
+  background: rgba(255,255,255,0.85);
+}
+.media-upload-btn:active,
+.media-add-text-btn:active { transform: scale(0.97); }
+.media-add-text-btn {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+}
+.media-add-text-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+/* 提示列（在管理模式下顯示） */
+.media-manage-hint {
+  position: absolute;
+  top: calc(5vh + 80px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.45);
+  pointer-events: none;
+  text-align: center;
+}
+
+/* 編輯標題對話框 */
+.media-edit-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.75);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  padding: 20px;
+}
+.media-edit-modal.open {
+  opacity: 1;
+  visibility: visible;
+}
+.media-edit-card {
+  width: 100%;
+  max-width: 420px;
+  background: #16161a;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.media-edit-card h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: #fff;
+  text-transform: uppercase;
+}
+.media-edit-input,
+.media-edit-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: #0a0a0c;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.media-edit-input:focus,
+.media-edit-textarea:focus {
+  border-color: rgba(255,255,255,0.4);
+}
+.media-edit-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.6;
+}
+.media-edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.media-edit-actions button {
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.media-edit-cancel {
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2) !important;
+}
+.media-edit-cancel:hover { background: rgba(255,255,255,0.06); }
+.media-edit-confirm {
+  background: #fff;
+  color: #0a0a0c;
+  font-weight: 600;
+}
+.media-edit-confirm:hover { background: rgba(255,255,255,0.85); }
+.media-edit-confirm:active { transform: scale(0.97); }
+
+/* 確認對話框（刪除用） */
+.media-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.75);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  padding: 20px;
+}
+.media-confirm-modal.open {
+  opacity: 1;
+  visibility: visible;
+}
+.media-confirm-card {
+  width: 100%;
+  max-width: 360px;
+  background: #16161a;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+.media-confirm-card p {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.media-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.media-confirm-actions button {
+  padding: 9px 22px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.media-confirm-cancel {
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2) !important;
+}
+.media-confirm-cancel:hover { background: rgba(255,255,255,0.06); }
+.media-confirm-delete {
+  background: #c0392b;
+  color: #fff;
+  font-weight: 600;
+}
+.media-confirm-delete:active { transform: scale(0.97); }
+
+/* 手機版：媒體卡片放大，工具列垂直堆疊 */
+@media (max-width: 640px) {
+  .media-title { letter-spacing: 0.2em; }
+  .media-subtitle { letter-spacing: 0.15em; }
+  .media-slider-container { padding: 0 4vw; }
+  .media-slide { width: 70vw; }
+  .media-toolbar { gap: 8px; padding: 8px 10px; }
+  .media-upload-btn, .media-add-text-btn { padding: 7px 14px; font-size: 0.72rem; }
 }

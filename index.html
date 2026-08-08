@@ -38,7 +38,63 @@
       <span>點擊查看</span>
     </div>
     <button class="back-btn" id="globe-back" aria-label="返回">←</button>
+    <button class="next-btn" id="globe-next" aria-label="進入媒體區">媒體區 →</button>
   </section>
+
+  <!-- ==================== Stage 4: 媒體滑動區（仿 beckyentertainment.co/media） ==================== -->
+  <section id="media-stage" class="stage">
+    <header class="media-header">
+      <div class="media-title-wrap">
+        <h1 class="media-title">PRESS / MEDIA</h1>
+        <p class="media-subtitle">媒體報導與品牌合作</p>
+      </div>
+      <div class="media-toggle">
+        <button class="media-toggle-btn is-active" data-mode="view" type="button">瀏覽</button>
+        <button class="media-toggle-btn" data-mode="manage" type="button">管理</button>
+      </div>
+    </header>
+
+    <div class="media-slider-container">
+      <div class="media-slider" id="media-slider">
+        <!-- 卡片由 JS 動態生成 -->
+      </div>
+    </div>
+
+    <!-- 管理工具列：上傳 / 新增 -->
+    <div class="media-toolbar" id="media-toolbar" hidden>
+      <label class="media-upload-btn" for="media-file-input">
+        <span>＋ 上傳媒體</span>
+        <input id="media-file-input" type="file" accept="image/*" multiple hidden>
+      </label>
+      <button class="media-add-text-btn" id="media-add-text-btn" type="button">＋ 新增純文字條目</button>
+    </div>
+
+    <button class="back-btn" id="media-back" aria-label="返回">←</button>
+  </section>
+
+  <!-- ==================== 媒體：編輯標題/內容對話框 ==================== -->
+  <div class="media-edit-modal" id="media-edit-modal" aria-hidden="true">
+    <div class="media-edit-card">
+      <h3 id="media-edit-title">編輯條目</h3>
+      <input class="media-edit-input" id="media-edit-title-input" type="text" placeholder="標題" maxlength="60">
+      <textarea class="media-edit-textarea" id="media-edit-text-input" placeholder="純文字內容（純文字條目用，圖片條目可留空）" maxlength="200"></textarea>
+      <div class="media-edit-actions">
+        <button class="media-edit-cancel" id="media-edit-cancel" type="button">取消</button>
+        <button class="media-edit-confirm" id="media-edit-confirm" type="button">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 媒體：刪除確認對話框 ==================== -->
+  <div class="media-confirm-modal" id="media-confirm-modal" aria-hidden="true">
+    <div class="media-confirm-card">
+      <p id="media-confirm-text">確定要刪除這個媒體條目嗎？</p>
+      <div class="media-confirm-actions">
+        <button class="media-confirm-cancel" id="media-confirm-cancel" type="button">取消</button>
+        <button class="media-confirm-delete" id="media-confirm-delete" type="button">刪除</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ==================== 圖片預覽彈窗 ==================== -->
   <div id="photo-lightbox" class="photo-lightbox">
@@ -57,6 +113,8 @@
   }
   </script>
 
+  <!-- 設定 + 主程式 -->
+  <script src="js/config.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
