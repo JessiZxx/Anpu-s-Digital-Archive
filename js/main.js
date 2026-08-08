@@ -1,139 +1,41 @@
-/* ==========================================
+/* ============================================================
    安溥的數字藏館 · Anpu's Digital Archive
-   Main Application — v6
-   ========================================== */
+   Main Application — 純靜態 · 本地素材 · 無外部爬取
+   ============================================================ */
 
 import * as THREE from 'three';
 
 // ============================================================
-//  DEFAULT DATA
+//  DATA LAYER — 單一資料來源：
+//  1) 優先讀取 config.js 內 ARCHIVE_CONFIG (使用者手動設定)
+//  2) 再加上根目錄 _index.json (選擇性：使用者直接把檔案
+//     放進 photos/ texts/ 後，手動維護一份檔名清單即可)
 // ============================================================
-const DEFAULT_DATA = {
-  photos: [
-    { id: 'p1', category: 'sphere', title: '關於我愛你', src: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=70' },
-    { id: 'p2', category: 'sphere', title: '玫瑰色的你', src: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&q=70' },
-    { id: 'p3', category: 'sphere', title: '南國的孩子', src: 'https://images.unsplash.com/photo-1485579149621-3123dd979885?w=600&q=70' },
-    { id: 'p4', category: 'sphere', title: '年輕時的相片', src: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=70' },
-    { id: 'p5', category: 'sphere', title: '我想你要走了', src: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&q=70' },
-    { id: 'p6', category: 'sphere', title: '喜歡', src: 'https://images.unsplash.com/photo-1518972559570-7cc1309f3229?w=600&q=70' },
-    { id: 'p7', category: 'sphere', title: '城市', src: 'https://images.unsplash.com/photo-1517732306149-e8f829eb588a?w=600&q=70' },
-    { id: 'p8', category: 'sphere', title: '人事已非', src: 'https://images.unsplash.com/photo-1493514789931-586cb221d7a7?w=600&q=70' },
-    { id: 'p9', category: 'sphere', title: '日常', src: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&q=70' },
-    { id: 'p10', category: 'sphere', title: '肖像', src: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=70' },
-    { id: 'p11', category: 'sphere', title: '特寫', src: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=600&q=70' },
-    { id: 'p12', category: 'sphere', title: '凝視', src: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&q=70' },
-    { id: 'm1', category: 'flat', title: '旋律', src: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=70' },
-    { id: 'm2', category: 'flat', title: '節奏', src: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&q=70' },
-    { id: 'm3', category: 'flat', title: '餘韻', src: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=70' },
-    { id: 'm4', category: 'flat', title: '現場', src: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=600&q=70' },
-    { id: 'm5', category: 'flat', title: '光影', src: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=600&q=70' },
-    { id: 'm6', category: 'flat', title: '樂章', src: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&q=70' },
-    { id: 'm7', category: 'flat', title: '錄音間', src: 'https://images.unsplash.com/photo-1501612780327-45045538702b?w=600&q=70' },
-    { id: 'm8', category: 'flat', title: '舞台', src: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&q=70' },
-  ],
-  quotes: [
-    { id: 'q1', category: 'sphere', text: '我擁有的都是僥倖，我失去的都是人生。' },
-    { id: 'q2', category: 'sphere', text: '在所有人事已非的景色裡，我最喜歡你。' },
-    { id: 'q3', category: 'sphere', text: '你是我在這個世界上，唯一的唯一。' },
-    { id: 'q4', category: 'sphere', text: '關於我愛你。' },
-    { id: 'q5', category: 'sphere', text: '我想你要走了。' },
-    { id: 'q6', category: 'sphere', text: '南國的孩子。' },
-    { id: 'q7', category: 'flat', text: '日子。' },
-    { id: 'q8', category: 'flat', text: '喜歡。' },
-    { id: 'q9', category: 'flat', text: '留下來，或者我跟你走。' },
-    { id: 'q10', category: 'flat', text: '如果這就是最後了，謝謝你曾經來過。' },
-    { id: 'q11', category: 'flat', text: '你是我眼中的一滴淚。' },
-    { id: 'q12', category: 'flat', text: '讓我們走到這裡。' },
-  ],
-};
-
-// ============================================================
-//  STORAGE
-// ============================================================
-let cloudStorage = null;
-
-async function initStorage() {
-  if (window.GitHubStorage) {
-    cloudStorage = window.GitHubStorage;
-  }
-  return cloudStorage;
+function getBasePath() {
+  // 純靜態站：一律相對於 index.html 位置
+  return './';
 }
 
-async function loadArchive() {
-  if (!cloudStorage) await initStorage();
-
-  // 1) 先用 GitHub 倉庫裡 photos/ & texts/ 的内容(用户直接在 GitHub 网页上传)
-  const repo = await loadRepoContents();
-
-  // 2) 再合并默认数据 + 云端用户上传(localStorage/GitHubStorage 兜底)
-  let data;
-  try {
-    data = await cloudStorage.fetchData();
-  } catch (_) { data = { photos: [], quotes: [] }; }
-
-  const allPhotos = [
-    ...DEFAULT_DATA.photos,
-    ...(repo.photos || []),
-    ...(data.photos || []),
-  ];
-  const allQuotes = [
-    ...DEFAULT_DATA.quotes,
-    ...(repo.quotes || []),
-    ...(data.quotes || []),
-  ];
-
-  // 去重(以 id 为 key,后面覆盖前面,保证用户云端/仓库内容的优先)
-  const pMap = new Map();
-  allPhotos.forEach(p => pMap.set(p.id, p));
-  const qMap = new Map();
-  allQuotes.forEach(q => qMap.set(q.id, q));
-
-  return { photos: [...pMap.values()], quotes: [...qMap.values()] };
+function addCacheBust(url) {
+  if (!url) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + 'v=' + (window.__CACHE_BUST || (window.__CACHE_BUST = Date.now().toString(36)));
 }
 
-async function saveArchive(data) {
-  if (!cloudStorage) await initStorage();
-  return cloudStorage.saveData(data);
-}
-
-// ============================================================
-//  UTILITY
-// ============================================================
 function randomBetween(min, max) { return min + Math.random() * (max - min); }
-
-function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function generateId() {
-  return Math.random().toString(36).slice(2, 8) + Date.now().toString(36);
-}
-
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// 簡易中文友好換行,每 maxChars 個字左右切一行
+// 簡易中文換行
 function wrapText(text, maxChars = 10) {
   if (!text) return [''];
   const raw = text.replace(/\r/g, '').split('\n').filter(l => l.length > 0);
   if (raw.length === 0) return [''];
   const out = [];
   raw.forEach(line => {
-    // 先去除行末的中日韩全角句号等标点单独成行
     let remaining = line;
     while (remaining.length > 0) {
-      // 如果长度在 maxChars 以内,直接加
-      if (remaining.length <= maxChars) {
-        out.push(remaining);
-        break;
-      }
-      // 找下一个切分点
+      if (remaining.length <= maxChars) { out.push(remaining); break; }
       let cut = maxChars;
-      // 避免把标点切在句首,如果 cut 位置是标点,往前切一个
       const punct = /[，。！？、；：,.!?;:]/;
       while (cut < remaining.length && punct.test(remaining[cut]) && cut > maxChars - 3) cut--;
       out.push(remaining.slice(0, cut));
@@ -143,240 +45,143 @@ function wrapText(text, maxChars = 10) {
   return out.length ? out : [''];
 }
 
-// ============================================================
-//  REPO CONTENTS LOADER (從 GitHub 倉庫的 photos/ & texts/ 文件夾讀取)
-// ============================================================
-// 用戶在 GitHub 網頁介面傳圖片到 photos/、傳 .txt 到 texts/,
-// 網站會自動讀取並出現在球體和平鋪視圖裡,所有人可見。
-
-// 自动判斷 base path:GitHub Pages(带 repo 路径)还是本地根路径
-function getBasePath() {
-  const { pathname } = window.location;
-  // GitHub Pages: 通常 /RepoName/ 或 /user.github.io/RepoName/
-  if (pathname.startsWith('/Anpu-s-Digital-Archive')) {
-    const idx = pathname.indexOf('/', 1);
-    return idx > 0 ? pathname.slice(0, idx + 1) : '/Anpu-s-Digital-Archive/';
-  }
-  return './';
-}
-
-// 图片文件扩展名白名单
 const PHOTO_EXT = /\.(jpg|jpeg|png|webp|gif|avif)$/i;
-const TEXT_EXT = /\.(txt|md)$/i;
+const TEXT_EXT  = /\.(txt|md)$/i;
 
-async function listRepoDir(dirName) {
-  const base = getBasePath();
-  const dir = dirName.endsWith('/') ? dirName : dirName + '/';
-  // 方案:先尝试调 GitHub REST API 列出目录(更精确,含实时 commit)
-  // 如果失败(比如 CORS/未登录),退化到读 _index.json(每次 push 后更新)
+// 嘗試讀取根目錄 _index.json（使用者可手動維護，也可以完全沒有）
+async function loadIndexJSON() {
   try {
-    // 从页面 meta 或默认读 owner/repo
-    const owner = 'JessiZxx';
-    const repo = 'Anpu-s-Digital-Archive';
-    const branch = 'main';
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${dirName}?ref=${branch}`;
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/vnd.github+json' },
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      const list = await res.json();
-      if (Array.isArray(list)) {
-        return list.map(it => ({ name: it.name, type: it.type, download_url: it.download_url, path: it.path }));
-      }
-    }
-  } catch (e) {
-    // API 失败走 fallback
-    console.warn('[RepoLoader] GitHub API 不可用,尝试 _index.json:', e?.message);
-  }
-
-  // Fallback: 读根目录下的 _index.json (我们会在每次 push 后提供一份快照)
-  try {
-    const idx = await fetch(`${base}_index.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (idx.ok) {
-      const json = await idx.json();
-      return (json[dirName] || []).map(n => ({ name: n, type: 'file', download_url: `${base}${dirName}/${n}` }));
-    }
-  } catch (_) { /* ignore */ }
-
-  return [];
+    const base = getBasePath();
+    const res = await fetch(base + '_index.json?t=' + Date.now(), { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch (_) { /* 忽略：沒有 _index.json 也完全可以跑 */ }
+  return null;
 }
 
-// 读取 .txt 的文本内容
+// 讀取 .txt 文字檔內容（_index.json 有列出時才會載入）
 async function fetchTextFile(url) {
   try {
-    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+    const res = await fetch(addCacheBust(url), { cache: 'no-store' });
     if (!res.ok) return '';
     return (await res.text() || '').trim();
   } catch (e) {
-    console.warn('[RepoLoader] 讀取文字失敗:', e);
+    console.warn('[Text] 讀取失敗:', url, e?.message);
     return '';
   }
 }
 
-// 把仓库里的 photos/ + texts/ 合并成 {photos, quotes} 数据结构(兼容 sphere/flat 两种 category)
-async function loadRepoContents() {
-  const PHOTO = 'photo';
-  const TEXT = 'quote';
-  const photos = [];
-  const quotes = [];
-  const base = getBasePath();
+// 合併 config + _index.json 成為最終 {photos, quotes}
+async function loadArchive() {
+  const cfg = (window.ARCHIVE_CONFIG && window.ARCHIVE_CONFIG.photos)
+    ? window.ARCHIVE_CONFIG
+    : { photos: [], quotes: [], backgrounds: {} };
 
-  // --- 图片 ---
-  try {
-    const photoEntries = await listRepoDir('photos');
-    photoEntries.forEach((e, i) => {
-      if (e.type !== 'file') return;
-      if (!PHOTO_EXT.test(e.name)) return;
-      const src = e.download_url || `${base}photos/${encodeURIComponent(e.name)}`;
-      const baseName = e.name.replace(PHOTO_EXT, '');
-      // 支持命名规则:sphere_xxx.jpg 放球体, flat_xxx.jpg 放平铺,否则两种视图都展示
-      let category = 'both';
-      if (/^sphere_/i.test(baseName)) category = 'sphere';
-      else if (/^flat_/i.test(baseName)) category = 'flat';
+  // 套用背景（無論 _index 有沒有都先套）
+  applyBackgrounds(cfg.backgrounds);
 
-      const pushCat = cat => photos.push({
-        id: `repo-p-${cat}-${i}-${baseName}`,
-        category: cat,
-        title: baseName.replace(/^(sphere|flat)_/i, '').replace(/[-_]+/g, ' '),
+  const photos = [...(cfg.photos || [])];
+  const quotes = [...(cfg.quotes || [])];
+
+  // _index.json: 讓使用者直接把圖/文放進 photos/ texts/ 資料夾，
+  // 並在 _index.json 列出檔名即可，不需要改 config.js
+  const idx = await loadIndexJSON();
+  if (idx) {
+    const base = getBasePath();
+    // photos
+    (idx.photos || []).forEach((name, i) => {
+      if (!PHOTO_EXT.test(name)) return;
+      const src = base + 'photos/' + encodeURIComponent(name);
+      const baseName = String(name).replace(PHOTO_EXT, '');
+      photos.push({
+        id: 'idx-p-' + i + '-' + baseName,
         src: addCacheBust(src),
+        title: baseName.replace(/[-_]+/g, ' '),
       });
-      if (category === 'both') { pushCat('sphere'); pushCat('flat'); }
-      else pushCat(category);
     });
-  } catch (e) {
-    console.warn('[RepoLoader] 讀取 photos 失敗:', e);
-  }
-
-  // --- 文字(.txt / .md) ---
-  try {
-    const textEntries = await listRepoDir('texts');
-    for (let i = 0; i < textEntries.length; i++) {
-      const e = textEntries[i];
-      if (e.type !== 'file') continue;
-      if (!TEXT_EXT.test(e.name)) continue;
-      const url = e.download_url || `${base}texts/${encodeURIComponent(e.name)}`;
-      let content = await fetchTextFile(url);
+    // texts
+    for (let i = 0; i < (idx.texts || []).length; i++) {
+      const name = idx.texts[i];
+      if (!TEXT_EXT.test(name)) continue;
+      const url = base + 'texts/' + encodeURIComponent(name);
+      const content = await fetchTextFile(url);
       if (!content) continue;
-      // 每個 txt 檔:以空行分隔多段,每段独立一条语录
       const segments = content.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
       const chunks = segments.length > 0 ? segments : [content];
-
-      const baseName = e.name.replace(TEXT_EXT, '');
-      let category = 'both';
-      if (/^sphere_/i.test(baseName)) category = 'sphere';
-      else if (/^flat_/i.test(baseName)) category = 'flat';
-
+      const baseName = String(name).replace(TEXT_EXT, '');
       chunks.forEach((text, ci) => {
-        const pushCat = cat => quotes.push({
-          id: `repo-q-${cat}-${i}-${ci}-${baseName}`,
-          category: cat,
-          title: baseName.replace(/^(sphere|flat)_/i, ''),
+        quotes.push({
+          id: 'idx-q-' + i + '-' + ci + '-' + baseName,
           text: text.slice(0, 240),
+          audio: '', // 文字資料夾不附音檔；要配音檔請在 config.js 手動加
         });
-        if (category === 'both') { pushCat('sphere'); pushCat('flat'); }
-        else pushCat(category);
       });
     }
-  } catch (e) {
-    console.warn('[RepoLoader] 讀取 texts 失敗:', e);
   }
 
   return { photos, quotes };
 }
 
-function addCacheBust(url) {
-  if (!url) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}t=${Date.now()}`;
+// 把設定的兩張背景圖套用到 home/welcome stage（容錯：檔案不存在就顯示預設）
+function applyBackgrounds(bgs) {
+  const home    = document.getElementById('home-bg');
+  const welcome = document.getElementById('welcome-bg');
+  if (home    && bgs?.home)    home.style.backgroundImage    = "url('" + bgs.home + "')";
+  if (welcome && bgs?.welcome) welcome.style.backgroundImage = "url('" + bgs.welcome + "')";
 }
 
 // ============================================================
-//  STAGE MANAGER
+//  STAGE MANAGER (頁面切換)
 // ============================================================
 class StageManager {
   constructor() {
     this.stages = {
-      home:   document.getElementById('home-stage'),
+      home:    document.getElementById('home-stage'),
       welcome: document.getElementById('welcome-stage'),
-      globe:  document.getElementById('globe-stage'),
+      globe:   document.getElementById('globe-stage'),
     };
     this.transWipe = document.getElementById('trans-wipe');
     this.current = 'home';
   }
-
   async transitionTo(name) {
     if (this.current === name) return;
     this.transWipe.classList.remove('play');
     void this.transWipe.offsetWidth;
     this.transWipe.classList.add('play');
-    await wait(400);
+    await wait(500);
     this.current = name;
     Object.values(this.stages).forEach(s => s.classList.remove('stage-active'));
     if (this.stages[name]) this.stages[name].classList.add('stage-active');
-    await wait(450);
+    await wait(500);
     this.transWipe.classList.remove('play');
     window.dispatchEvent(new CustomEvent('stage-changed', { detail: { stage: name } }));
   }
 }
 
 // ============================================================
-//  STAGE 1: 首頁
+//  STAGE 1 / 2 (首頁 / 過渡頁)
 // ============================================================
 class HomeStage {
-  constructor(stageManager) {
-    this.stageManager = stageManager;
-    this.stage = document.getElementById('home-stage');
-    this.bg = document.getElementById('home-bg');
-    this.hotzone = document.getElementById('home-hotzone');
-    this.applyDefaultBg();
-    this.bindEvents();
-  }
-
-  applyDefaultBg() {
-    const stored = localStorage.getItem('anpu-home-bg');
-    if (stored) {
-      this.bg.style.backgroundImage = `url(${stored})`;
-    }
-  }
-
-  bindEvents() {
-    this.hotzone.addEventListener('click', () => {
-      this.stageManager.transitionTo('welcome');
-    });
+  constructor(sm) {
+    this.sm = sm;
+    const go = () => this.sm.transitionTo('welcome');
+    document.getElementById('home-hotzone')?.addEventListener('click', go);
+    document.getElementById('home-enter-btn')?.addEventListener('click', go);
   }
 }
-
-// ============================================================
-//  STAGE 2: 進館頁
-// ============================================================
 class WelcomeStage {
-  constructor(stageManager) {
-    this.stageManager = stageManager;
-    this.stage = document.getElementById('welcome-stage');
-    this.bg = document.getElementById('welcome-bg');
-    this.enterHotzone = document.getElementById('enter-hotzone');
-    this.applyDefaultBg();
-    this.bindEvents();
-  }
-
-  applyDefaultBg() {
-    const stored = localStorage.getItem('anpu-welcome-bg');
-    if (stored) {
-      this.bg.style.backgroundImage = `url(${stored})`;
-    }
-  }
-
-  bindEvents() {
-    this.enterHotzone.addEventListener('click', () => {
-      this.stageManager.transitionTo('globe');
+  constructor(sm) {
+    this.sm = sm;
+    const go = () => {
+      this.sm.transitionTo('globe');
       window.dispatchEvent(new CustomEvent('globe-stage-ready'));
-    });
+    };
+    document.getElementById('enter-hotzone')?.addEventListener('click', go);
+    document.getElementById('welcome-enter-btn')?.addEventListener('click', go);
   }
 }
 
 // ============================================================
-//  3D PHOTO SPHERE
+//  3D PHOTO SPHERE (核心展廳球體)
 // ============================================================
 class PhotoSphere {
   constructor() {
@@ -391,11 +196,11 @@ class PhotoSphere {
     this.isDragging = false;
     this.hasMoved = false;
     this.lastPointer = { x: 0, y: 0 };
-    this.rotX = 0.2;
+    this.rotX = 0.18;
     this.rotY = 0;
     this.velX = 0;
     this.velY = 0;
-    this.autoRotateSpeed = 0.0012;
+    this.autoRotateSpeed = 0.0010;
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
@@ -409,64 +214,40 @@ class PhotoSphere {
     const h = this.container.clientHeight || window.innerHeight;
 
     this.scene = new THREE.Scene();
-    // 純黑色背景,跟用户给的第4张图一致
-    this.scene.background = new THREE.Color(0x000000);
+    // 深色黑調底（對應需求：球體底色深色黑調）
+    this.scene.background = null; // 讓 body 的漸層透出
 
-    this.camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 500);
+    this.camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 500);
     this.camera.position.set(0, 0, 8);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(w, h);
     this.container.appendChild(this.renderer.domElement);
 
-    // 更柔和的光照,突出白色拍立得边框
-    this.scene.add(new THREE.AmbientLight(0xffffff, 1.15));
-
-    // 移除星星,保持纯黑,更接近用户给的参考图
-    this.stars = null;
+    // 柔和光照
+    this.scene.add(new THREE.AmbientLight(0xffffff, 1.25));
 
     this.sphereGroup = new THREE.Group();
     this.scene.add(this.sphereGroup);
 
     this.bindInteraction();
     this.animate();
-
     window.addEventListener('resize', () => this.onResize());
-  }
-
-  createStars() {
-    const count = 400;
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const r = 20 + Math.random() * 30;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      pos[i * 3 + 2] = r * Math.cos(phi);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const mat = new THREE.PointsMaterial({
-      color: 0xffffff, size: 0.04, sizeAttenuation: true,
-      transparent: true, opacity: 0.3, depthWrite: false,
-    });
-    return new THREE.Points(geo, mat);
   }
 
   async loadData() {
     try {
       this.data = await loadArchive();
-      this.buildSphere();
     } catch (e) {
       console.error('載入數據失敗:', e);
       this.data = { photos: [], quotes: [] };
-      this.buildSphere();
     }
+    this.buildSphere();
   }
 
   buildSphere() {
+    // 清理舊物件
     this.tiles.forEach(t => {
       this.sphereGroup.remove(t);
       if (t.material?.map) t.material.map.dispose();
@@ -476,12 +257,12 @@ class PhotoSphere {
 
     const RADIUS = 2.8;
     const items = [];
-
-    this.data.photos.filter(p => p.category === 'sphere').forEach(p => items.push({ kind: 'photo', data: p }));
-    this.data.quotes.filter(q => q.category === 'sphere').forEach(q => items.push({ kind: 'quote', data: q }));
+    // 球體視圖 = 全部卡片 (config 沒有 category 欄位，全部都顯示在球體 + 平鋪)
+    this.data.photos.forEach(p => items.push({ kind: 'photo', data: p }));
+    this.data.quotes.forEach(q => items.push({ kind: 'quote', data: q }));
 
     if (items.length === 0) {
-      const placeholder = this.createTextTile('上傳你的第一張照片', 1.2, 0.6);
+      const placeholder = this.createTextTile('上傳照片至 /photos 並在 config.js 新增', 1.4, 0.7);
       placeholder.position.set(0, 0, RADIUS);
       placeholder.lookAt(0, 0, 0);
       this.sphereGroup.add(placeholder);
@@ -489,6 +270,7 @@ class PhotoSphere {
       return;
     }
 
+    // Fibonacci sphere 均勻分布
     const GOLDEN = Math.PI * (3 - Math.sqrt(5));
     const N = items.length;
 
@@ -500,17 +282,16 @@ class PhotoSphere {
       const z = Math.sin(theta) * r;
 
       const item = items[i];
-
-      const sizeRand = Math.random();
       let w, h;
+      const sizeRand = Math.random();
       if (item.kind === 'photo') {
         const isLarge = sizeRand > 0.82;
         const baseScale = isLarge ? randomBetween(1.05, 1.3) : randomBetween(0.55, 0.95);
         w = baseScale;
-        h = baseScale * 1.35;
+        h = baseScale * 1.3;
       } else {
-        w = randomBetween(0.5, 0.75);
-        h = w * 0.5;
+        w = randomBetween(0.55, 0.8);
+        h = w * 0.55;
       }
 
       const offset = randomBetween(-0.25, 0.25);
@@ -526,17 +307,16 @@ class PhotoSphere {
 
       tile.position.copy(pos);
       tile.lookAt(pos.clone().multiplyScalar(2));
-      tile.rotateZ(randomBetween(-0.4, 0.4));
-      tile.rotateX(randomBetween(-0.25, 0.25));
-      tile.rotateY(randomBetween(-0.25, 0.25));
+      // 輕微錯落旋轉（參考第三張圖：卡片錯落排布）
+      tile.rotateZ(randomBetween(-0.45, 0.45));
+      tile.rotateX(randomBetween(-0.2, 0.2));
+      tile.rotateY(randomBetween(-0.2, 0.2));
 
       tile.userData = {
-        category: 'sphere',
         itemData: item.data,
         itemKind: item.kind,
         tileIndex: this.tiles.length,
       };
-
       tile.material.transparent = true;
       tile.material.opacity = 1.0;
       tile.material.depthWrite = false;
@@ -546,40 +326,42 @@ class PhotoSphere {
     }
   }
 
+  // ============ 拍立得照片卡片 ============
   createPhotoTile(photo, w, h) {
-    // 拍立得比例: 照片部分 + 底部白色留白
-    // 参考用户图 3: 白色边框 + 照片圆角 + 底部留白
     const canvas = document.createElement('canvas');
     const CW = 320;
-    // 拍立得经典比例: 宽高约 3:4,底部留白 15%~20%
-    const CH = Math.round(CW * 1.28);
+    const CH = Math.round(CW * 1.3); // 拍立得比例
     canvas.width = CW;
     canvas.height = CH;
     const ctx = canvas.getContext('2d');
 
-    // 1) 白色拍立得底纸(整张底色白)
+    // 1) 磨砂白底（模擬磨砂質感）
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, CW, CH);
-
-    // 2) 轻微拍立得阴影(软阴影效果,用外层发光)
+    // 細微噪點（磨砂）
+    for (let i = 0; i < 900; i++) {
+      const px = Math.floor(Math.random() * CW);
+      const py = Math.floor(Math.random() * CH);
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.2)';
+      ctx.fillRect(px, py, 1, 1);
+    }
+    // 外框細線
     ctx.save();
     ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(1, 1, CW - 2, CH - 2);
     ctx.restore();
 
-    // 3) 照片区域(上下左右留白色边距,上边距约 6%,下边距约 22%(留白写字区),左右约 6%)
-    const photoMarginX = Math.round(CW * 0.06);
-    const photoMarginTop = Math.round(CH * 0.055);
-    const photoW = CW - photoMarginX * 2;
-    const photoH = Math.round(CH * 0.72); // 剩下留给底部留白
+    // 2) 照片區
+    const marginX = Math.round(CW * 0.065);
+    const marginTop = Math.round(CH * 0.06);
+    const photoW = CW - marginX * 2;
+    const photoH = Math.round(CH * 0.70);
 
-    // 先画个浅灰底防图片未加载的空白
-    ctx.fillStyle = '#f0f0f0';
-    this.roundRect(ctx, photoMarginX, photoMarginTop, photoW, photoH, 4);
+    ctx.fillStyle = '#ebebeb';
+    this.roundRect(ctx, marginX, marginTop, photoW, photoH, 3);
     ctx.fill();
 
-    // 4) 先画占位(如果图片没加载好,就保持浅灰底,边框仍保持拍立得白边)
     const texture = new THREE.CanvasTexture(canvas);
     texture.minFilter = THREE.LinearFilter;
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -588,32 +370,28 @@ class PhotoSphere {
     const geo = new THREE.PlaneGeometry(w, h * (CH / CW));
     const mesh = new THREE.Mesh(geo, mat);
 
-    // 5) 加载真实照片,画进照片区域
-    const src = photo.src || photo.dataURL;
+    // 3) 載入真實照片
+    const src = photo.src || '';
     if (src) {
       const loader = new THREE.TextureLoader();
       loader.setCrossOrigin('anonymous');
       loader.load(src,
         (tex) => {
-          // 取得圖片的原始 DOM image
           const img = tex.image;
           if (img && img.complete) {
-            this.drawPolaroidPhoto(ctx, img, CW, CH, photoMarginX, photoMarginTop, photoW, photoH);
+            this.drawPolaroidPhoto(ctx, img, CW, CH, marginX, marginTop, photoW, photoH);
             texture.needsUpdate = true;
           }
-          tex.dispose(); // 用完就釋放原始 texture,我們只要 canvas 版
+          tex.dispose();
         },
         undefined,
-        () => {
-          // 失敗:保持白色边的占位卡,这样球体不会空
-        }
+        () => { /* 失敗保持佔位：白底+灰照片區，體驗不壞 */ }
       );
     }
 
     return mesh;
   }
 
-  // 画圆角矩形路径
   roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -624,85 +402,77 @@ class PhotoSphere {
     ctx.closePath();
   }
 
-  // 在拍立得底纸上画真实照片(按 cover 方式裁剪,保持圆角)
   drawPolaroidPhoto(ctx, img, CW, CH, marginX, marginTop, photoW, photoH) {
-    // 1) 清掉旧的浅灰底,重新画一遍白底确保
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, CW, CH);
-
+    // 重畫磨砂噪點
+    for (let i = 0; i < 700; i++) {
+      const px = Math.floor(Math.random() * CW);
+      const py = Math.floor(Math.random() * CH);
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.15)';
+      ctx.fillRect(px, py, 1, 1);
+    }
     ctx.save();
-    // 照片圆角裁剪区
-    this.roundRect(ctx, marginX, marginTop, photoW, photoH, 4);
+    this.roundRect(ctx, marginX, marginTop, photoW, photoH, 3);
     ctx.clip();
-
-    // object-fit: cover 算法
     const iw = img.naturalWidth || img.width || 1;
     const ih = img.naturalHeight || img.height || 1;
     const imgRatio = iw / ih;
     const areaRatio = photoW / photoH;
     let sx, sy, sw, sh;
     if (imgRatio > areaRatio) {
-      // 图更宽:按高匹配,裁两边
-      sh = ih;
-      sw = ih * areaRatio;
-      sx = (iw - sw) / 2;
-      sy = 0;
+      sh = ih; sw = ih * areaRatio;
+      sx = (iw - sw) / 2; sy = 0;
     } else {
-      // 图更高:按宽匹配,裁上下
-      sw = iw;
-      sh = iw / areaRatio;
-      sx = 0;
-      sy = (ih - sh) / 2;
+      sw = iw; sh = iw / areaRatio;
+      sx = 0; sy = (ih - sh) / 2;
     }
     ctx.drawImage(img, sx, sy, sw, sh, marginX, marginTop, photoW, photoH);
     ctx.restore();
   }
 
+  // ============ 文字語錄卡片 ============
   createTextTile(text, w, h) {
-    // 文字也改成拍立得风格的白色卡片(带圆角)
     const cw = 320;
-    const ch = Math.round(cw * 1.15); // 文字卡片比照片稍微方一点
+    const ch = Math.round(cw * 1.15);
     const canvas = document.createElement('canvas');
     canvas.width = cw;
     canvas.height = ch;
     const ctx = canvas.getContext('2d');
 
-    // 1) 白色拍立得底纸
+    // 磨砂白底
     ctx.fillStyle = '#ffffff';
-    // 圆角外框
-    this.roundRect(ctx, 0, 0, cw, ch, 8);
+    this.roundRect(ctx, 0, 0, cw, ch, 6);
     ctx.fill();
-
-    // 2) 轻微阴影
+    for (let i = 0; i < 700; i++) {
+      const px = Math.floor(Math.random() * cw);
+      const py = Math.floor(Math.random() * ch);
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.15)';
+      ctx.fillRect(px, py, 1, 1);
+    }
     ctx.save();
     ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-    ctx.lineWidth = 2;
-    this.roundRect(ctx, 1, 1, cw - 2, ch - 2, 8);
+    ctx.lineWidth = 1.5;
+    this.roundRect(ctx, 1, 1, cw - 2, ch - 2, 6);
     ctx.stroke();
     ctx.restore();
 
-    // 3) 内部文字显示区(留白 + 圆角黑线框作为设计感)
-    const padX = Math.round(cw * 0.07);
-    const padY = Math.round(ch * 0.08);
-    const innerW = cw - padX * 2;
-    const innerH = ch - padY * 2;
+    // 文字（深色襯線體）
+    const padX = Math.round(cw * 0.08);
+    const padY = Math.round(ch * 0.12);
 
-    ctx.fillStyle = '#111';
-    ctx.font = '600 24px "Noto Serif TC", serif';
+    ctx.fillStyle = '#0d0d0d';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // 简单换行: 每 10 个中文字或 20 个英文字切一行
     const wrapped = wrapText(text, 11);
     const lineH = 30;
     const totalH = wrapped.length * lineH;
-    // 垂直居中
     const startY = ch / 2 - totalH / 2 + lineH / 2;
 
     wrapped.forEach((line, i) => {
-      // 字号自适应: 如果行数太多,稍微缩小
-      const fs = wrapped.length > 4 ? 20 : (wrapped.length > 2 ? 22 : 24);
-      ctx.font = `600 ${fs}px "Noto Serif TC", serif`;
+      const fs = wrapped.length > 4 ? 19 : (wrapped.length > 2 ? 22 : 25);
+      ctx.font = `600 ${fs}px "Noto Serif TC","Songti TC","SimSun",serif`;
       ctx.fillText(line, cw / 2, startY + i * lineH);
     });
 
@@ -715,27 +485,24 @@ class PhotoSphere {
     return new THREE.Mesh(geo, mat);
   }
 
-  // ----- 互動 -----
+  // ============ 互動 ============
   bindInteraction() {
     const c = this.renderer.domElement;
     c.addEventListener('pointerdown', (e) => this.onPointerDown(e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
-    window.addEventListener('pointerup', (e) => this.onPointerUp(e));
+    window.addEventListener('pointerup',   (e) => this.onPointerUp(e));
     c.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
   }
-
   onPointerDown(e) {
     this.isDragging = true;
     this.hasMoved = false;
     this.lastPointer = { x: e.clientX, y: e.clientY };
   }
-
   onPointerMove(e) {
     if (!this.isDragging) return;
     const dx = e.clientX - this.lastPointer.x;
     const dy = e.clientY - this.lastPointer.y;
     if (Math.abs(dx) + Math.abs(dy) > 3) this.hasMoved = true;
-
     this.rotY += dx * 0.005;
     this.rotX += dy * 0.005;
     this.rotX = Math.max(-1.3, Math.min(1.3, this.rotX));
@@ -743,45 +510,29 @@ class PhotoSphere {
     this.velX = dy * 0.0006;
     this.lastPointer = { x: e.clientX, y: e.clientY };
   }
-
   onPointerUp(e) {
     if (!this.isDragging) return;
     this.isDragging = false;
-    if (!this.hasMoved) {
-      this.handleClick(e);
-    }
+    if (!this.hasMoved) this.handleClick(e);
   }
-
   handleClick(e) {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.mouse, this.camera);
-
-    const visibleTiles = this.tiles.filter(t => t.material.opacity > 0.1);
-    const hits = this.raycaster.intersectObjects(visibleTiles, false);
-    if (hits.length > 0) {
-      this.openTileDetail(hits[0].object);
-    }
+    const visible = this.tiles.filter(t => t.material.opacity > 0.1);
+    const hits = this.raycaster.intersectObjects(visible, false);
+    if (hits.length > 0) this.openTileDetail(hits[0].object);
   }
-
   openTileDetail(tile) {
-    const item = tile.userData.itemData;
-    const kind = tile.userData.itemKind;
     window.dispatchEvent(new CustomEvent('open-tile', {
       detail: {
-        item, kind, category: 'sphere',
-        position: tile.position.clone(),
-        index: tile.userData.tileIndex,
+        item: tile.userData.itemData,
+        kind: tile.userData.itemKind,
       },
     }));
   }
-
-  onWheel(e) {
-    e.preventDefault();
-    this.rotY += e.deltaY * 0.001;
-  }
-
+  onWheel(e) { e.preventDefault(); this.rotY += e.deltaY * 0.001; }
   onResize() {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
@@ -789,12 +540,11 @@ class PhotoSphere {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h);
   }
-
   animate() {
     requestAnimationFrame(() => this.animate());
-
     if (this.sphereGroup) {
       if (!this.isDragging) {
+        // 自動慢速旋轉 + 慣性減速
         this.rotY += this.autoRotateSpeed + this.velY;
         this.rotX += this.velX;
         this.rotX = Math.max(-1.3, Math.min(1.3, this.rotX));
@@ -804,138 +554,98 @@ class PhotoSphere {
       this.sphereGroup.rotation.y = this.rotY;
       this.sphereGroup.rotation.x = this.rotX;
     }
-
-    if (this.stars) this.stars.rotation.y += 0.00015;
     this.renderer.render(this.scene, this.camera);
   }
-
-  show() {
-    this.container.style.display = 'block';
-  }
-
-  hide() {
-    this.container.style.display = 'none';
-  }
-
-  async rebuild() {
-    await this.loadData();
-  }
+  show() { this.container.style.display = 'block'; }
+  hide() { this.container.style.display = 'none'; }
+  async rebuild() { await this.loadData(); }
 }
 
 // ============================================================
-//  FLAT GRID VIEW (平铺)
+//  FLAT GRID (平鋪視圖)
 // ============================================================
 class FlatGridView {
   constructor() {
     this.container = document.getElementById('flat-container');
     this.track = document.getElementById('flat-track');
     this.data = { photos: [], quotes: [] };
-
     this.isDown = false;
-    this.startX = 0;
-    this.scrollStart = 0;
-    this.hasMoved = false;
-    this.currentX = 0;
-
+    this.startX = 0; this.scrollStart = 0;
+    this.hasMoved = false; this.currentX = 0;
     this.init();
     this.loadData();
   }
-
   init() {
     this.track.addEventListener('pointerdown', (e) => this.onPointerDown(e));
     window.addEventListener('pointermove', (e) => this.onPointerMove(e));
-    window.addEventListener('pointerup', () => this.onPointerUp());
+    window.addEventListener('pointerup',   () => this.onPointerUp());
     this.track.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
-
     this.container.classList.add('hidden');
   }
-
   async loadData() {
     try {
       this.data = await loadArchive();
-      this.buildGrid();
     } catch (e) {
-      console.error('載入失敗:', e);
+      console.error('Flat 載入失敗:', e);
     }
+    this.buildGrid();
   }
-
   buildGrid() {
     this.track.innerHTML = '';
     const items = [];
-    this.data.photos.filter(p => p.category === 'flat').forEach(p => items.push({ kind: 'photo', data: p }));
-    this.data.quotes.filter(q => q.category === 'flat').forEach(q => items.push({ kind: 'quote', data: q }));
+    this.data.photos.forEach(p => items.push({ kind: 'photo', data: p }));
+    this.data.quotes.forEach(q => items.push({ kind: 'quote', data: q }));
 
     if (items.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'flat-empty';
-      empty.innerHTML = '<p>上傳照片到平铺</p>';
+      empty.innerHTML = '<p>在 config.js 新增照片與語錄</p>';
       this.track.appendChild(empty);
       return;
     }
-
-    // 3-row grid with random row assignment (becky 風)
     const rows = [[], [], []];
-    items.forEach((item, i) => {
-      rows[i % 3].push(item);
-    });
+    items.forEach((item, i) => rows[i % 3].push(item));
 
     rows.forEach((rowItems, rowIdx) => {
       const row = document.createElement('div');
       row.className = 'flat-row';
-      row.style.setProperty('--row-offset', (rowIdx * 20) + 'px');
-
+      row.style.setProperty('--row-offset', (rowIdx * 24) + 'px');
       rowItems.forEach((item) => {
         const card = document.createElement('div');
         card.className = `flat-card ${item.kind}`;
-        card.dataset.id = item.data.id;
-        card.dataset.kind = item.kind;
-
         if (item.kind === 'photo') {
-          const imgSrc = item.data.dataURL || item.data.src || '';
           card.innerHTML = `
             <div class="fc-img-wrap">
-              <img src="${imgSrc}" alt="${item.data.title || ''}" draggable="false">
+              <img src="${item.data.src || ''}" alt="${item.data.title || ''}"
+                   onerror="this.style.opacity=0.25;this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 200%22><rect fill=%22%23ddd%22 width=%22200%22 height=%22200%22/></svg>'"
+                   draggable="false">
             </div>
-            <div class="fc-info">
-              <span class="fc-title">${item.data.title || '未命名'}</span>
-            </div>
+            <div class="fc-info"><span class="fc-title">${item.data.title || '未命名'}</span></div>
           `;
         } else {
           card.innerHTML = `
-            <div class="fc-quote">
-              <p>${item.data.text}</p>
-            </div>
+            <div class="fc-quote"><p>${item.data.text || ''}</p></div>
           `;
         }
-
         card.addEventListener('click', () => this.onCardClick(item));
         row.appendChild(card);
       });
-
       this.track.appendChild(row);
     });
   }
-
   onCardClick(item) {
     if (this.hasMoved) return;
     window.dispatchEvent(new CustomEvent('open-tile', {
-      detail: {
-        item: item.data,
-        kind: item.kind,
-        category: 'flat',
-      },
+      detail: { item: item.data, kind: item.kind },
     }));
   }
-
   onPointerDown(e) {
-    this.isDown = true;
-    this.hasMoved = false;
-    this.startX = e.clientX;
-    this.currentX = e.clientX;
+    this.isDown = true; this.hasMoved = false;
+    this.startX = e.clientX; this.currentX = e.clientX;
     this.scrollStart = this.track.scrollLeft;
     this.track.style.cursor = 'grabbing';
+    this.track.classList.add('grabbing');
   }
-
   onPointerMove(e) {
     if (!this.isDown) return;
     e.preventDefault();
@@ -943,308 +653,174 @@ class FlatGridView {
     if (Math.abs(dx) > 3) this.hasMoved = true;
     this.track.scrollLeft = this.scrollStart - dx;
   }
-
   onPointerUp() {
     this.isDown = false;
     this.track.style.cursor = 'grab';
+    this.track.classList.remove('grabbing');
   }
-
-  onWheel(e) {
-    e.preventDefault();
-    this.track.scrollLeft += e.deltaY || e.deltaX;
-  }
-
-  show() {
-    this.container.classList.remove('hidden');
-    this.track.style.cursor = 'grab';
-  }
-
-  hide() {
-    this.container.classList.add('hidden');
-  }
-
-  async rebuild() {
-    await this.loadData();
-  }
+  onWheel(e) { e.preventDefault(); this.track.scrollLeft += e.deltaY || e.deltaX; }
+  show() { this.container.classList.remove('hidden'); this.track.style.cursor = 'grab'; }
+  hide() { this.container.classList.add('hidden'); }
+  async rebuild() { await this.loadData(); }
 }
 
 // ============================================================
-//  DETAIL PANEL
+//  DETAIL PANEL (彈窗) + AUDIO 控制
+//  規則：
+//   - 音檔"絕不自動播放"，僅點擊播放按鈕才啟動
+//   - 關閉彈窗 -> 立即停止音檔 + 重設進度
 // ============================================================
 class DetailPanel {
   constructor() {
     this.panel = document.getElementById('detail-panel');
     this.backdrop = document.getElementById('detail-backdrop');
-    this.img = document.getElementById('detail-img');
-    this.content = document.getElementById('detail-content');
+    this.imgWrap = document.getElementById('detail-img');
+    this.imgEl = document.getElementById('detail-img-el');
+    this.contentEl = document.getElementById('detail-content');
     this.closeBtn = document.getElementById('detail-close');
-    this.editBtn = document.getElementById('detail-edit');
-    this.deleteBtn = document.getElementById('detail-delete');
-    this.titleInput = document.getElementById('detail-title-input');
-    this.saveTitleBtn = document.getElementById('detail-save-title');
-    this.titleEditor = document.getElementById('detail-title-editor');
 
-    this.currentItem = null;
+    // 音頻相關
+    this.audioWrap = document.getElementById('detail-audio');
+    this.audioEl = document.getElementById('archive-audio');
+    this.playBtn = document.getElementById('audio-play-btn');
+    this.iconPlay = document.getElementById('icon-play');
+    this.iconPause = document.getElementById('icon-pause');
+    this.seekInput = document.getElementById('audio-seek');
+    this.curSpan = document.getElementById('audio-cur');
+    this.totalSpan = document.getElementById('audio-total');
+
     this.currentKind = null;
-    this.currentCategory = null;
 
     this.backdrop.addEventListener('click', () => this.close());
     this.closeBtn.addEventListener('click', () => this.close());
-    this.editBtn.addEventListener('click', () => this.toggleEdit());
-    this.deleteBtn.addEventListener('click', () => this.deleteItem());
-    this.saveTitleBtn.addEventListener('click', () => this.saveTitle());
-
     window.addEventListener('open-tile', (e) => this.open(e.detail));
+
+    // 音頻事件
+    this.playBtn?.addEventListener('click', () => this.togglePlay());
+    this.audioEl?.addEventListener('loadedmetadata', () => this.onLoadedMeta());
+    this.audioEl?.addEventListener('timeupdate',   () => this.onTimeUpdate());
+    this.audioEl?.addEventListener('ended',        () => this.onEnded());
+    this.audioEl?.addEventListener('play',         () => this.setPlaying(true));
+    this.audioEl?.addEventListener('pause',        () => this.setPlaying(false));
+    this.seekInput?.addEventListener('input', (e) => {
+      if (!this.audioEl.duration || isNaN(this.audioEl.duration)) return;
+      const sec = (parseFloat(e.target.value) / 100) * this.audioEl.duration;
+      this.audioEl.currentTime = sec;
+    });
   }
 
+  // ----------- 彈窗開啟 -----------
   open(detail) {
-    this.currentItem = detail.item;
-    this.currentKind = detail.kind;
-    this.currentCategory = detail.category;
-
     const item = detail.item;
-    const catLabel = detail.category === 'flat' ? '平铺' : '球覽';
-    const title = item.title || item.caption || item.text || '未命名';
-    const body = detail.kind === 'quote' ? item.text : '';
+    const kind = detail.kind;
+    this.currentKind = kind;
 
-    // 圖片
-    if (detail.kind === 'photo') {
-      this.img.style.display = 'block';
-      const imgEl = document.getElementById('detail-img-el');
-      imgEl.src = item.dataURL || item.src || '';
-      imgEl.onerror = () => { this.img.style.display = 'none'; };
+    // 照片區
+    if (kind === 'photo') {
+      this.panel.classList.remove('quote-only');
+      this.imgWrap.style.display = '';
+      this.imgEl.src = item.src || '';
+      this.imgEl.onerror = () => { this.imgWrap.style.display = 'none'; };
     } else {
-      this.img.style.display = 'none';
+      this.panel.classList.add('quote-only');
+      this.imgWrap.style.display = 'none';
+      this.imgEl.removeAttribute('src');
     }
 
-    this.content.innerHTML = `
-      <div class="dp-cat">${catLabel}</div>
-      <h2 class="dp-title">${title}</h2>
-      ${body ? `<p class="dp-body">${body.replace(/\n/g, '<br>')}</p>` : ''}
+    // 文字區
+    const title = item.title || (kind === 'quote' ? (item.text || '').slice(0, 20) : '未命名');
+    const body  = kind === 'quote' ? item.text : (item.title || '');
+    this.contentEl.innerHTML = `
+      <div class="dp-cat">${kind === 'photo' ? '照片' : '語錄'}</div>
+      <h2 class="dp-title">${this._esc(title)}</h2>
+      ${body ? `<p class="dp-body">${this._esc(body).replace(/\n/g, '<br>')}</p>` : ''}
     `;
 
-    this.titleInput.value = title;
-    this.titleEditor.classList.remove('show');
+    // 音頻：只有 quote 且有 audio 欄位才顯示
+    const hasAudio = kind === 'quote' && !!item.audio;
+    this._resetAudio();
+    if (hasAudio) {
+      this.audioWrap.style.display = '';
+      this.audioEl.src = item.audio;
+      this.audioEl.load(); // 僅預載中繼資料，不播放
+    } else {
+      this.audioWrap.style.display = 'none';
+    }
+
     this.panel.classList.add('active');
   }
 
+  // ----------- 彈窗關閉 -> 立刻停止音頻 -----------
   close() {
     this.panel.classList.remove('active');
-    this.currentItem = null;
+    this._resetAudio();
+    this.currentKind = null;
   }
 
-  toggleEdit() {
-    this.titleEditor.classList.toggle('show');
+  // ----------- 音頻：嚴格使用者點擊才播放 -----------
+  togglePlay() {
+    if (!this.audioEl || !this.audioEl.src) return;
+    if (this.audioEl.paused) {
+      // 注意：因為是使用者 click 觸發，符合瀏覽器自動播放政策
+      const p = this.audioEl.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(err => {
+          console.warn('[Audio] 播放失敗:', err?.message || err);
+          this.setPlaying(false);
+        });
+      }
+    } else {
+      this.audioEl.pause();
+    }
   }
 
-  async saveTitle() {
-    if (!this.currentItem) return;
-    const newTitle = this.titleInput.value.trim();
-    if (!newTitle) return;
+  setPlaying(isPlaying) {
+    if (!this.playBtn) return;
+    this.playBtn.classList.toggle('playing', !!isPlaying);
+    if (this.iconPlay)  this.iconPlay.style.display  = isPlaying ? 'none' : '';
+    if (this.iconPause) this.iconPause.style.display = isPlaying ? '' : 'none';
+  }
 
-    this.currentItem.title = newTitle;
+  onLoadedMeta() {
+    if (!this.audioEl.duration || isNaN(this.audioEl.duration)) return;
+    this.totalSpan.textContent = this._fmtTime(this.audioEl.duration);
+    this.seekInput.value = '0';
+  }
+  onTimeUpdate() {
+    if (!this.audioEl.duration || isNaN(this.audioEl.duration)) return;
+    this.curSpan.textContent = this._fmtTime(this.audioEl.currentTime);
+    this.seekInput.value = String((this.audioEl.currentTime / this.audioEl.duration) * 100);
+  }
+  onEnded() {
+    this.setPlaying(false);
+    this.seekInput.value = '0';
+    this.curSpan.textContent = this._fmtTime(0);
+  }
 
-    this.content.querySelector('.dp-title').textContent = newTitle;
-    this.titleEditor.classList.remove('show');
-
+  _resetAudio() {
+    if (!this.audioEl) return;
     try {
-      const data = await loadArchive();
-      const list = this.currentKind === 'photo' ? data.photos : data.quotes;
-      const idx = list.findIndex(i => i.id === this.currentItem.id);
-      if (idx >= 0) list[idx] = this.currentItem;
-      await saveArchive(data);
-      if (window.app) {
-        if (this.currentCategory === 'sphere' && window.app.sphere) await window.app.sphere.rebuild();
-        if (this.currentCategory === 'flat' && window.app.flatView) await window.app.flatView.rebuild();
-      }
-    } catch (e) {
-      console.error('保存標題失敗:', e);
-    }
+      this.audioEl.pause();
+      this.audioEl.currentTime = 0;
+    } catch (_) { /* ignore */ }
+    this.audioEl.removeAttribute('src');
+    try { this.audioEl.load(); } catch (_) {}
+    this.setPlaying(false);
+    if (this.seekInput) this.seekInput.value = '0';
+    if (this.curSpan)   this.curSpan.textContent = '0:00';
+    if (this.totalSpan) this.totalSpan.textContent = '0:00';
   }
 
-  async deleteItem() {
-    if (!this.currentItem) return;
-    if (!confirm(`確定要刪除「${this.currentItem.title || this.currentItem.text || ''}」嗎？`)) return;
-
-    try {
-      const data = await loadArchive();
-      const list = this.currentKind === 'photo' ? data.photos : data.quotes;
-      const idx = list.findIndex(i => i.id === this.currentItem.id);
-      if (idx >= 0) list.splice(idx, 1);
-
-      await saveArchive(data);
-      this.close();
-
-      if (window.app) {
-        if (this.currentCategory === 'sphere' && window.app.sphere) await window.app.sphere.rebuild();
-        if (this.currentCategory === 'flat' && window.app.flatView) await window.app.flatView.rebuild();
-      }
-    } catch (e) {
-      console.error('刪除失敗:', e);
-      alert('刪除失敗，請重試');
-    }
+  _fmtTime(sec) {
+    sec = Math.max(0, Math.floor(sec || 0));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
   }
-}
-
-// ============================================================
-//  UPLOAD MODAL
-// ============================================================
-class UploadModal {
-  constructor() {
-    this.modal = document.getElementById('upload-modal');
-    this.backdrop = this.modal.querySelector('.modal-backdrop');
-    this.closeBtn = document.getElementById('upload-close');
-    this.photoInput = document.getElementById('photo-input');
-    this.photoPreview = document.getElementById('photo-preview');
-    this.photoQueue = [];
-
-    this.tabBtns = document.querySelectorAll('.tab-btn');
-    this.textTab = document.querySelector('[data-pane="text"]');
-    this.photoTab = document.querySelector('[data-pane="photo"]');
-    this.textInput = document.getElementById('text-input');
-    this.submitBtn = document.getElementById('photo-submit');
-
-    this.bindEvents();
-  }
-
-  bindEvents() {
-    this.backdrop.addEventListener('click', () => this.close());
-    this.closeBtn.addEventListener('click', () => this.close());
-    this.photoInput.addEventListener('change', (e) => this.onFiles(e.target.files));
-    this.submitBtn.addEventListener('click', () => this.submitPhotos());
-    this.tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
-    });
-    document.getElementById('text-submit').addEventListener('click', () => this.submitText);
-  }
-
-  switchTab(name) {
-    this.tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-    this.photoTab.classList.toggle('active', name === 'photo');
-    this.textTab.classList.toggle('active', name === 'text');
-  }
-
-  open() { this.modal.classList.add('active'); }
-  close() { this.modal.classList.remove('active'); }
-
-  async onFiles(files) {
-    for (const file of files) {
-      if (!file.type.startsWith('image/')) continue;
-      const dataURL = await fileToDataURL(file);
-      this.photoQueue.push({ id: generateId(), dataURL, name: file.name, title: '', category: 'sphere' });
-    }
-    this.renderPreview();
-  }
-
-  renderPreview() {
-    this.photoPreview.innerHTML = '';
-    this.photoQueue.forEach((item, idx) => {
-      const div = document.createElement('div');
-      div.className = 'preview-item';
-      div.innerHTML = `
-        <img src="${item.dataURL}" alt="">
-        <input type="text" class="pi-title" placeholder="輸入標題" value="${item.title}">
-        <select class="pi-cat">
-          <option value="sphere" ${item.category === 'sphere' ? 'selected' : ''}>球覽</option>
-          <option value="flat" ${item.category === 'flat' ? 'selected' : ''}>平铺</option>
-        </select>
-        <button class="pi-del" data-idx="${idx}">×</button>
-      `;
-      this.photoPreview.appendChild(div);
-    });
-
-    this.submitBtn.style.display = this.photoQueue.length > 0 ? 'flex' : 'none';
-
-    this.photoPreview.querySelectorAll('.pi-title').forEach(inp => {
-      inp.addEventListener('input', e => { this.photoQueue[+e.target.parentElement.querySelector('.pi-del').dataset.idx].title = e.target.value; });
-    });
-    this.photoPreview.querySelectorAll('.pi-cat').forEach(sel => {
-      sel.addEventListener('change', e => { this.photoQueue[+e.target.parentElement.querySelector('.pi-del').dataset.idx].category = e.target.value; });
-    });
-    this.photoPreview.querySelectorAll('.pi-del').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const idx = +btn.dataset.idx;
-        this.photoQueue.splice(idx, 1);
-        this.renderPreview();
-      });
-    });
-  }
-
-  async submitPhotos() {
-    if (this.photoQueue.length === 0) return;
-
-    const newPhotos = [];
-    for (const item of this.photoQueue) {
-      try {
-        if (cloudStorage?.enabled) {
-          const file = this.dataURLtoFile(item.dataURL, item.name);
-          const result = await cloudStorage.uploadImage(file, item.name);
-          newPhotos.push({
-            id: item.id,
-            category: item.category,
-            title: item.title || '未命名',
-            src: result.url,
-            sha: result.sha,
-            path: result.path,
-            dataURL: item.dataURL,
-          });
-        } else {
-          newPhotos.push({
-            id: item.id,
-            category: item.category,
-            title: item.title || '未命名',
-            src: item.dataURL,
-            dataURL: item.dataURL,
-          });
-        }
-      } catch (e) {
-        console.error('上傳失敗:', e);
-      }
-    }
-
-    const data = await loadArchive();
-    data.photos.push(...newPhotos);
-    await saveArchive(data);
-
-    this.photoQueue = [];
-    this.renderPreview();
-    this.close();
-
-    if (window.app) {
-      if (window.app.sphere) await window.app.sphere.rebuild();
-      if (window.app.flatView) await window.app.flatView.rebuild();
-    }
-  }
-
-  async submitText() {
-    const text = this.textInput.value.trim();
-    if (!text) return;
-
-    const quote = {
-      id: generateId(),
-      category: 'sphere',
-      text,
-      title: text.slice(0, 30),
-    };
-
-    const data = await loadArchive();
-    data.quotes.push(quote);
-    await saveArchive(data);
-
-    this.textInput.value = '';
-    this.close();
-
-    if (window.app?.sphere) await window.app.sphere.rebuild();
-  }
-
-  dataURLtoFile(dataURL, filename) {
-    const arr = dataURL.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8 = new Uint8Array(n);
-    while (n--) u8[n] = bstr.charCodeAt(n);
-    return new File([u8], filename, { type: mime });
+  _esc(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 }
 
@@ -1254,19 +830,12 @@ class UploadModal {
 class App {
   constructor() {
     this.stageManager = new StageManager();
-    this.homeStage = new HomeStage(this.stageManager);
+    this.homeStage    = new HomeStage(this.stageManager);
     this.welcomeStage = new WelcomeStage(this.stageManager);
-    this.detailPanel = new DetailPanel();
-    this.uploadModal = new UploadModal();
-    this.sphere = null;
-    this.flatView = null;
-    this.currentMode = 'sphere';
-    this._lastContentHash = '';
-    this._refreshTimer = null;
-
-    document.getElementById('add-button').addEventListener('click', () => {
-      this.uploadModal.open();
-    });
+    this.detailPanel  = new DetailPanel();
+    this.sphere       = null;
+    this.flatView     = null;
+    this.currentMode  = 'sphere';
 
     document.querySelectorAll('.globe-tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -1275,89 +844,42 @@ class App {
       });
     });
 
-    window.addEventListener('globe-stage-ready', async () => {
-      if (!this.sphere) this.sphere = new PhotoSphere();
+    window.addEventListener('globe-stage-ready', () => {
+      if (!this.sphere)   this.sphere   = new PhotoSphere();
       if (!this.flatView) this.flatView = new FlatGridView();
       this.applyMode('sphere');
-      // 进入球馆后立刻做一次内容刷新(优先从 GitHub 目录加载最新)
-      await this.refreshIfChanged();
-      // 每 60 秒检查一次 GitHub 仓库 photos/texts 是否有新增(用户刚传完图就能看到)
-      this.startPeriodicRefresh();
-    });
-
-    // visibilitychange:用户切回标签页时立刻刷新一次
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') this.refreshIfChanged();
     });
 
     window.addEventListener('load', () => this.onLoad());
     window.app = this;
   }
 
-  // 计算内容的简单 hash,用于判断是否有新增/变更
-  _hashContent(photos, quotes) {
-    const joined = [
-      photos.map(p => `${p.id}${p.src || ''}`).join('|'),
-      quotes.map(q => `${q.id}${q.text?.slice(0, 20) || ''}`).join('|'),
-    ].join('||');
-    let h = 0;
-    for (let i = 0; i < joined.length; i++) h = ((h << 5) - h + joined.charCodeAt(i)) | 0;
-    return String(h);
-  }
-
-  async refreshIfChanged() {
-    try {
-      const repo = await loadRepoContents();
-      // 如果仓库里完全没东西,就别刷新(以免用默认占位重建一遍)
-      if ((repo.photos?.length || 0) + (repo.quotes?.length || 0) === 0) return;
-
-      const h = this._hashContent(repo.photos || [], repo.quotes || []);
-      if (h && h !== this._lastContentHash) {
-        console.log(`[App] 检测到新内容(hash ${this._lastContentHash} -> ${h}),重建视图`);
-        this._lastContentHash = h;
-        if (this.sphere) await this.sphere.loadData();
-        if (this.flatView) await this.flatView.loadData();
-      }
-    } catch (e) {
-      console.warn('[App] 刷新失败(忽略):', e?.message || e);
-    }
-  }
-
-  startPeriodicRefresh() {
-    if (this._refreshTimer) clearInterval(this._refreshTimer);
-    this._refreshTimer = setInterval(() => this.refreshIfChanged(), 60 * 1000);
-  }
-
   switchMode(mode) {
     if (mode === this.currentMode) return;
-    document.querySelectorAll('.globe-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+    document.querySelectorAll('.globe-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.mode === mode);
+    });
     this.applyMode(mode);
   }
-
   applyMode(mode) {
     this.currentMode = mode;
+    const globeDom = document.getElementById('globe-container');
+    const flatDom  = document.getElementById('flat-container');
     if (mode === 'sphere') {
       if (this.sphere) this.sphere.show();
       if (this.flatView) this.flatView.hide();
-      document.getElementById('globe-container').style.display = 'block';
-      const container = document.getElementById('flat-container');
-      container.classList.add('hidden');
+      globeDom.style.display = 'block';
+      flatDom.classList.add('hidden');
     } else {
       if (this.sphere) this.sphere.hide();
       if (this.flatView) this.flatView.show();
-      document.getElementById('globe-container').style.display = 'none';
-      const container = document.getElementById('flat-container');
-      container.classList.remove('hidden');
+      globeDom.style.display = 'none';
+      flatDom.classList.remove('hidden');
     }
   }
-
   async onLoad() {
-    try {
-      await loadArchive();
-      console.log('[App] 數據載入完成');
-    } catch (e) {
-      console.warn('[App] 預載入失敗:', e);
-    }
+    try { await loadArchive(); }
+    catch (e) { console.warn('[App] 預載入失敗:', e); }
   }
 }
 
@@ -1371,15 +893,11 @@ function hideLoadingIndicator() {
 
 window.addEventListener('load', () => {
   setTimeout(() => {
-    try {
-      new App();
-    } catch (e) {
-      console.error('[Boot] App 初始化失敗:', e);
-    } finally {
-      hideLoadingIndicator();
-    }
-  }, 100);
+    try { new App(); }
+    catch (e) { console.error('[Boot] 初始化失敗:', e); }
+    finally { hideLoadingIndicator(); }
+  }, 200);
 });
 
-// 兜底:若 5 秒後仍未隱藏,強制隱藏載入指示器
+// 兜底 5 秒
 setTimeout(hideLoadingIndicator, 5000);
