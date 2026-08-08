@@ -1042,8 +1042,22 @@ class App {
 // ============================================================
 //  BOOT
 // ============================================================
+function hideLoadingIndicator() {
+  const indicator = document.getElementById('loading-indicator');
+  if (indicator) indicator.classList.add('hidden');
+}
+
 window.addEventListener('load', () => {
   setTimeout(() => {
-    new App();
+    try {
+      new App();
+    } catch (e) {
+      console.error('[Boot] App 初始化失敗:', e);
+    } finally {
+      hideLoadingIndicator();
+    }
   }, 100);
 });
+
+// 兜底:若 5 秒後仍未隱藏,強制隱藏載入指示器
+setTimeout(hideLoadingIndicator, 5000);
