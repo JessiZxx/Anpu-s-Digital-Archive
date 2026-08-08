@@ -63,8 +63,9 @@ function goTo(target, direction = 'forward') {
   });
 }
 
-document.getElementById('home-enter').addEventListener('click', () => goTo('welcome', 'forward'));
-document.getElementById('welcome-enter').addEventListener('click', () => goTo('globe', 'forward'));
+// 熱區點擊事件綁定
+document.getElementById('home-hotzone').addEventListener('click', () => goTo('welcome', 'forward'));
+document.getElementById('enter-hotzone').addEventListener('click', () => goTo('globe', 'forward'));
 document.getElementById('globe-back').addEventListener('click', () => goTo('welcome', 'backward'));
 
 // ESC 返回上一頁
@@ -426,13 +427,6 @@ const globeApp = {
 };
 
 // ============================================================
-// 4. 隱藏加載動畫
+// 4. 頁面初始狀態
 // ============================================================
-function hideLoading() {
-  const el = document.getElementById('loading-indicator');
-  if (el) el.classList.add('hidden');
-}
-
-document.addEventListener('DOMContentLoaded', hideLoading);
-window.addEventListener('load', hideLoading);
-setTimeout(hideLoading, 2500);
+// 首頁即為初始頁面，無需額外加載動畫
