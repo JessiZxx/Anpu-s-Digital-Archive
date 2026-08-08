@@ -133,11 +133,11 @@ html, body {
   50%      { transform: translateY(3px); opacity: 1; }
 }
 
-/* 首頁：橫向 2/6 寬 × 縱向 3/4 高（從左/上算） */
+/* 首頁：依使用者橙色標記 → 約左 25%、上 78% */
 .home-enter-btn {
-  left: calc(100% * 2 / 6);
-  top: calc(100% * 3 / 4);
-  transform: translateX(-50%);
+  left: 25%;
+  top: 78%;
+  transform: translate(-50%, -50%);
 }
 .home-enter-btn .enter-arrow { animation-name: enter-arrow-down; }
 @keyframes enter-arrow-down {
@@ -145,13 +145,10 @@ html, body {
   50%      { transform: translateY(4px); opacity: 1; }
 }
 
-/* 過渡頁：縱向 3/4 高（從上往下數第 4 個 1/4 格）、橫向 1/6 的第 4 格偏左 */
+/* 過渡頁：依使用者橙色標記 → 右下角，「進館」文字下方偏左 */
 .welcome-enter-btn {
-  right: auto;
-  left: calc(100% * 4 / 6);
-  top: auto;
-  bottom: calc(100% * 1 / 4);
-  transform: translateX(-65%);
+  right: 6vw;
+  bottom: 5vh;
 }
 
 /* 提示文字：ENTER ME · 點擊進入 */
@@ -171,15 +168,13 @@ html, body {
 }
 
 #home-hint {
-  left: calc(100% * 2 / 6);
-  top: calc(100% * 3 / 4 + 60px);
+  left: 25%;
+  top: calc(78% + 60px);
   transform: translateX(-50%);
 }
 #welcome-hint {
-  right: auto;
-  left: calc(100% * 4 / 6);
-  bottom: calc(100% * 1 / 4 + 60px);
-  transform: translateX(-65%);
+  right: 6vw;
+  bottom: calc(5vh + 56px);
 }
 
 /* ============ Stage 3: 3D 球體展廳 ============ */
