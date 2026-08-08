@@ -1,9 +1,11 @@
 # Photos 文件夹
 
-把你想展示在球体和平铺视图里的照片直接上传到这里（支持 .jpg .jpeg .png .webp .gif）。
-上传后，网站会自动读取并展示这些照片（拍立得白色边框 + 黑色背景球体）。
+把安溥的照片直接上传到这里（支持 .jpg .jpeg .png .webp）。
 
-示例：
-- anpu-live.jpg
-- concert-2024.png
+上传后，在 `js/config.js` 的 `photos` 数组中添加对应条目即可：
+```js
+{ id: 'p_001', src: 'photos/anpu_01.jpg', title: '關於我愛你' },
+```
+
+照片会直接贴在球体表面，不加任何边框或滤镜。
 
