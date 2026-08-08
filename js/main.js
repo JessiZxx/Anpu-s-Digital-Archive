@@ -770,7 +770,7 @@ const globeApp = {
   buildCards(items) {
     if (!items || !items.length) return;
     // 球面 Fibonacci 分布
-    const R = 4.2;         // 卡片所在球面半徑 (略大於核心球)
+    const R = 3.9;         // 縮小卡片分佈半徑，讓卡片更貼近核心球
     const startIdx = this.cardMeshes.length;
     const total = startIdx + items.length;
 
@@ -795,7 +795,8 @@ const globeApp = {
   },
 
   addCardMesh(item, tex, pos) {
-    const W = 2.2, H = 2.9;
+    // 縮小卡片尺寸（從 2.2x2.9 調整為 1.3x1.7）
+    const W = 1.3, H = 1.7; 
     const geo = new THREE.PlaneGeometry(W, H);
     const mat = new THREE.MeshStandardMaterial({
       map: tex,
