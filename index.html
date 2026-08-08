@@ -5,162 +5,117 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Anpu's Digital Archive · 安溥的數字藏館</title>
+  <title>安溥的數字藏館 · Anpu's Digital Archive</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <!-- ==================== 轉場疊層（單一簡單掃過效果） ==================== -->
-  <div id="transition-layer" class="transition-layer">
-    <div class="trans-wipe" id="trans-wipe"></div>
+  <!-- Loading -->
+  <div id="loading-indicator">
+    <span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
   </div>
 
-  <!-- ==================== 黑屏過渡幕 ==================== -->
-  <div id="blackout" class="blackout"></div>
+  <!-- Transition wipe -->
+  <div id="trans-wipe" class="trans-wipe"></div>
 
-  <!-- ==================== Stage 1: 首頁（全螢幕圖 + 文字點擊熱區） ==================== -->
-  <div id="curtain-stage" class="stage stage-active">
-    <div class="page-bg" id="home-bg"></div>
-    <div class="page-empty" id="home-empty">
-      <div class="empty-title">第 1 頁 · 首頁</div>
-      <div class="empty-desc">上傳你準備好的第一張圖（波浪點 + 歡迎標語那張）</div>
-      <label class="empty-btn">
-        <input type="file" accept="image/*" id="home-file" style="display:none;">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round"/>
-          <polyline points="17 8 12 3 7 8" stroke-linecap="round"/>
-          <line x1="12" y1="3" x2="12" y2="15" stroke-linecap="round"/>
-        </svg>
-        上傳第 1 張圖
-      </label>
-      <div class="empty-tip">• 點右上角也可以隨時換圖<br>• 圖上傳後，「歡迎來到安溥的數字藏館」位置會自動變成可點擊熱區</div>
+  <!-- ==================== Stage 1: 首頁 ==================== -->
+  <div id="home-stage" class="stage stage-active">
+    <div class="page-bg" id="home-bg" style="background-image: url('assets/pages/home-bg-new.jpg');"></div>
+    <div class="home-overlay">
+      <h1 id="home-title">Anpu's Digital Archive</h1>
+      <p class="home-subtitle">安溥的數字藏館</p>
+      <p class="home-bottom-text">歡迎來到安溥的數字藏館</p>
+      <a href="javascript:void(0)" id="home-hotzone" class="hotzone-link" title="進入">
+        <span>ENTER</span>
+      </a>
     </div>
-
-    <button class="bg-edit-btn" id="home-edit-btn" title="更換首頁圖">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M12 20h9" stroke-linecap="round"/>
-        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      換首頁圖
-    </button>
-
-    <!-- 可點擊的「超連結」熱區：對齊你的標語位置（底部大字） -->
-    <a href="javascript:void(0)" id="home-hotzone" class="hotzone-link">
-      <span class="hz-underline"></span>
-    </a>
   </div>
 
-  <!-- ==================== Stage 2: 進館頁（全螢幕圖 + 進館按鈕） ==================== -->
+  <!-- ==================== Stage 2: 進館頁 ==================== -->
   <div id="welcome-stage" class="stage">
-    <div class="page-bg" id="welcome-bg"></div>
-    <div class="page-empty" id="welcome-empty">
-      <div class="empty-title">第 2 頁 · 進館</div>
-      <div class="empty-desc">上傳你準備好的第二張圖（安溥照片 + 愛我一次兩遍 + 進館那張）</div>
-      <label class="empty-btn">
-        <input type="file" accept="image/*" id="welcome-file" style="display:none;">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round"/>
-          <polyline points="17 8 12 3 7 8" stroke-linecap="round"/>
-          <line x1="12" y1="3" x2="12" y2="15" stroke-linecap="round"/>
-        </svg>
-        上傳第 2 張圖
-      </label>
-      <div class="empty-tip">• 圖上傳後，「進館」位置會自動出現可點擊按鈕<br>• 點擊就會進入 3D 球體場景</div>
-    </div>
-
-    <button class="bg-edit-btn" id="welcome-edit-btn" title="更換進館圖">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M12 20h9" stroke-linecap="round"/>
-        <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      換進館圖
-    </button>
-
-    <!-- 進館按鈕（放在右下角，和你圖上位置對齊） -->
-    <button id="enter-gate" class="enter-link">
-      進館
-      <span class="enter-line"></span>
-    </button>
-  </div>
-
-  <!-- ==================== Stage 3: 3D 球體主場景 ==================== -->
-  <div id="globe-stage" class="stage">
-    <div id="globe-container"></div>
-    <div id="globe-hint">
-      <span>拖拽旋轉球體</span>
-      <span class="dot">·</span>
-      <span>點擊照片或語錄</span>
-    </div>
-    <button id="add-button" title="上傳內容">
-      <svg viewBox="0 0 24 24" width="28" height="28">
-        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>
-    <div id="add-button-tooltip">上傳你的碎片</div>
-  </div>
-
-  <!-- ==================== 照片彈窗（寶麗來風格） ==================== -->
-  <div id="photo-modal" class="modal">
-    <div class="modal-backdrop"></div>
-    <div class="polaroid">
-      <button class="polaroid-close" aria-label="關閉">
-        <svg viewBox="0 0 24 24" width="22" height="22">
-          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <div class="polaroid-photo">
-        <img id="photo-modal-img" src="" alt="" draggable="false">
+    <div class="page-bg" id="welcome-bg" style="background-image: url('assets/pages/welcome-default.jpg');"></div>
+    <div class="welcome-overlay">
+      <div class="welcome-text-block">
+        <p class="wt-line">愛我。一次兩遍。</p>
+        <p class="wt-line wt-name">安溥。</p>
       </div>
-      <div class="polaroid-caption" id="photo-modal-caption"></div>
-    </div>
-    <button class="polaroid-like" id="polaroid-like" aria-label="喜歡">
-      <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
-        <path d="M12 21s-7-4.534-9.5-9.5C1 7 4 4 7 4c2 0 3.5 1 5 3 1.5-2 3-3 5-3 3 0 6 3 4.5 7.5C19 16.466 12 21 12 21z"/>
-      </svg>
-      <span id="like-count">0</span>
-    </button>
-    <div class="polaroid-tools">
-      <button class="tool-btn" id="reset-view-btn" aria-label="重置視角">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 12a9 9 0 1 0 3-6.7" stroke-linecap="round"/>
-          <polyline points="3 4 3 9 8 9" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <button class="tool-btn" id="locate-btn" aria-label="定位到球體">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="3"/>
-          <line x1="12" y1="2" x2="12" y2="6" stroke-linecap="round"/>
-          <line x1="12" y1="18" x2="12" y2="22" stroke-linecap="round"/>
-          <line x1="2" y1="12" x2="6" y2="12" stroke-linecap="round"/>
-          <line x1="18" y1="12" x2="22" y2="12" stroke-linecap="round"/>
-        </svg>
-      </button>
+      <a href="javascript:void(0)" id="enter-hotzone" class="hotzone-link enter-hotzone" title="進入藏館">
+        <span>進館</span>
+      </a>
     </div>
   </div>
 
-  <!-- ==================== 語錄彈窗 ==================== -->
-  <div id="quote-modal" class="modal">
-    <div class="modal-backdrop"></div>
-    <div class="quote-content">
-      <button class="polaroid-close quote-close" aria-label="關閉">
+  <!-- ==================== Stage 3: 球體 / 平铺 ==================== -->
+  <div id="globe-stage" class="stage">
+    <!-- 3D 球體容器 -->
+    <div id="globe-container"></div>
+
+    <!-- 平铺視圖容器 -->
+    <div id="flat-container" class="flat-container hidden">
+      <div id="flat-track" class="flat-track"></div>
+    </div>
+
+    <div id="globe-hint">
+      <span>拖曳旋轉</span>
+      <span class="dot">·</span>
+      <span>滾輪轉動</span>
+      <span class="dot">·</span>
+      <span>點擊查看</span>
+    </div>
+
+    <div id="globe-tabs">
+      <button class="globe-tab active" data-mode="sphere">球覽</button>
+      <button class="globe-tab" data-mode="flat">平铺</button>
+    </div>
+
+    <button id="add-button" title="上傳內容">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ==================== Detail Panel ==================== -->
+  <div id="detail-panel" class="detail-panel">
+    <div id="detail-backdrop" class="detail-backdrop"></div>
+    <div class="detail-content">
+      <button id="detail-close" class="detail-close" aria-label="關閉">
         <svg viewBox="0 0 24 24" width="22" height="22">
           <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </button>
-      <p id="quote-modal-text"></p>
-      <div class="audio-controls">
-        <button id="audio-play-btn">
-          <span class="play-icon"></span>
-          <span class="pause-icon"><span></span><span></span></span>
-          <span class="btn-label">播放</span>
+      <div id="detail-img" class="detail-img-wrap">
+        <img id="detail-img-el" src="" alt="" draggable="false">
+      </div>
+      <div id="detail-content" class="detail-text">
+        <div class="dp-cat">球覽</div>
+        <h2 class="dp-title">標題</h2>
+        <p class="dp-body"></p>
+      </div>
+      <div class="detail-actions">
+        <button id="detail-edit" class="detail-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20h9" stroke-linecap="round"/>
+            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          編輯標題
         </button>
-        <span id="audio-status" class="audio-status"></span>
+        <button id="detail-delete" class="detail-btn danger">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polyline points="3 6 5 6 21 6" stroke-linecap="round"/>
+            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          刪除
+        </button>
+      </div>
+      <div id="detail-title-editor" class="title-editor">
+        <input id="detail-title-input" type="text" placeholder="輸入新標題">
+        <button id="detail-save-title">儲存</button>
       </div>
     </div>
   </div>
@@ -169,21 +124,20 @@
   <div id="upload-modal" class="modal">
     <div class="modal-backdrop"></div>
     <div class="upload-panel">
-      <button class="upload-close" aria-label="關閉">
+      <button id="upload-close" class="upload-close" aria-label="關閉">
         <svg viewBox="0 0 24 24" width="22" height="22">
           <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </button>
-      <h2>上傳到安溥的數字藏館</h2>
+      <h2>上傳到藏館</h2>
       <div class="upload-tabs">
         <button class="tab-btn active" data-tab="photo">照片</button>
-        <button class="tab-btn" data-tab="text">文字</button>
+        <button class="tab-btn" data-tab="text">文字 / 語錄</button>
       </div>
 
-      <!-- 照片上傳 -->
       <div class="tab-pane active" data-pane="photo">
-        <p class="hint">拖拽或點擊上傳照片，為每張照片取個名字，然後上傳到球體</p>
+        <p class="hint">上傳照片，輸入標題，選擇類別，儲存到雲端</p>
         <div class="upload-drop" id="photo-drop">
           <input type="file" id="photo-input" accept="image/*" multiple>
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -191,38 +145,27 @@
             <circle cx="8.5" cy="10.5" r="1.5"/>
             <path d="M21 16l-5-5-9 9" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          <span>點擊或拖拽上傳照片</span>
+          <span>點擊選擇照片</span>
         </div>
         <div class="upload-preview" id="photo-preview"></div>
-        <button class="primary-btn" id="photo-submit" style="display:none;">上傳到球體</button>
+        <button class="primary-btn" id="photo-submit" style="display:none;">上傳到雲端</button>
       </div>
 
-      <!-- 文字上傳 -->
       <div class="tab-pane" data-pane="text">
-        <p class="hint">寫下一段話，可選擇錄音配上</p>
+        <p class="hint">寫下一段文字或語錄，儲存到雲端</p>
         <textarea id="text-input" placeholder="我想說的話..."></textarea>
-        <div class="text-audio-row">
-          <button class="ghost-btn" id="record-for-text">
-            <span class="rec-dot"></span> 錄製語音
-          </button>
-          <span class="rec-state" id="rec-state">未錄音</span>
-        </div>
         <button class="primary-btn" id="text-submit">新增到球體</button>
-      </div>
-
-      <!-- 資料管理 -->
-      <div class="manage-row">
-        <button class="ghost-btn" id="export-btn">導出 JSON</button>
-        <button class="ghost-btn" id="clear-btn">清空我的上傳</button>
-        <span class="storage-info" id="storage-info"></span>
       </div>
     </div>
   </div>
 
-  <!-- ==================== 底部簽名 ==================== -->
   <footer id="site-footer">
-    <p>一份安靜的禮物，只獻給懂得的人。</p>
+    <p>安溥的數字藏館 · Anpu's Digital Archive</p>
   </footer>
+
+  <!-- GitHub 雲端儲存配置 -->
+  <script src="js/config.js"></script>
+  <script src="js/githubStorage.js"></script>
 
   <!-- Three.js -->
   <script type="importmap">
