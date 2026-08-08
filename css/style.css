@@ -86,6 +86,97 @@ html, body {
   height: 70px;
 }
 
+/* ============ 明顯可見的進入按鈕（Stage 1 & 2） ============ */
+.page-enter-btn {
+  position: absolute;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 28px;
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: 999px;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.35em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 0 rgba(255,255,255,0.4);
+  animation: enter-btn-pulse 2.4s ease-in-out infinite;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.page-enter-btn:active {
+  transform: scale(0.96);
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.9);
+}
+@keyframes enter-btn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+  50%      { box-shadow: 0 0 0 14px rgba(255,255,255,0); }
+}
+
+.enter-text {
+  display: inline-block;
+}
+.enter-arrow {
+  display: inline-block;
+  font-size: 1rem;
+  letter-spacing: 0;
+  animation: enter-arrow-bob 1.4s ease-in-out infinite;
+}
+@keyframes enter-arrow-bob {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50%      { transform: translateY(3px); opacity: 1; }
+}
+
+/* 首頁：置於花體英文下方 */
+.home-enter-btn {
+  left: 50%;
+  top: 62%;
+  transform: translateX(-50%);
+}
+.home-enter-btn .enter-arrow { animation-name: enter-arrow-down; }
+@keyframes enter-arrow-down {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50%      { transform: translateY(4px); opacity: 1; }
+}
+
+/* 過渡頁：右下角「進館」位置（覆蓋在原圖文字上） */
+.welcome-enter-btn {
+  right: 6vw;
+  bottom: 5vh;
+}
+
+/* 提示文字：ENTER ME · 點擊進入 */
+.page-hint {
+  position: absolute;
+  z-index: 20;
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  color: rgba(255,255,255,0.55);
+  pointer-events: none;
+  text-transform: uppercase;
+  animation: page-hint-fade 3s ease-in-out infinite;
+}
+@keyframes page-hint-fade {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.85; }
+}
+
+#home-hint {
+  left: 50%;
+  top: calc(62% + 70px);
+  transform: translateX(-50%);
+}
+#welcome-hint {
+  right: 6vw;
+  bottom: calc(5vh + 56px);
+}
+
 /* ============ Stage 3: 3D 球體展廳 ============ */
 #globe-stage {
   background: #000;

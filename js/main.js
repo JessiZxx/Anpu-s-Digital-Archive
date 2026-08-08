@@ -70,12 +70,25 @@ function goTo(target, direction = 'forward') {
   });
 }
 
-// 熱區點擊事件綁定
+// 熱區 + 明顯按鈕 點擊事件綁定
 document.getElementById('home-hotzone').addEventListener('click', () => goTo('welcome', 'forward'));
+document.getElementById('home-enter-btn').addEventListener('click', () => goTo('welcome', 'forward'));
 document.getElementById('enter-hotzone').addEventListener('click', () => goTo('globe', 'forward'));
+document.getElementById('welcome-enter-btn').addEventListener('click', () => goTo('globe', 'forward'));
 document.getElementById('globe-back').addEventListener('click', () => goTo('welcome', 'backward'));
 document.getElementById('globe-next').addEventListener('click', () => goTo('media', 'forward'));
 document.getElementById('media-back').addEventListener('click', () => goTo('globe', 'backward'));
+
+// 整頁可點擊作為備援（首頁 → 歡迎頁；歡迎頁 → 球體）
+document.getElementById('home-stage').addEventListener('click', e => {
+  // 已在過場中忽略
+  if (currentStage !== 'home') return;
+  // 已在動畫中忽略
+  if (document.getElementById('trans-wipe').classList.contains('active-down')) return;
+  // 若點到按鈕或熱區則不重複觸發（會由它們自己處理）
+  if (e.target.closest('.page-enter-btn, .hotzone')) return;
+  goTo('welcome', 'forward');
+});
 
 // ESC 返回上一頁
 document.addEventListener('keydown', e => {

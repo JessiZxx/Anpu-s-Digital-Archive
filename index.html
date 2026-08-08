@@ -19,6 +19,12 @@
     <div class="page-bg" id="home-bg" style="background-image: url('images/home-bg.jpg');"></div>
     <!-- 熱區：Anpu's Digital Archive 花體英文區域 -->
     <a href="javascript:void(0)" id="home-hotzone" class="hotzone home-hotzone" title="進入"></a>
+    <!-- 明顯可見的進入按鈕 + 提示動畫 -->
+    <button id="home-enter-btn" class="page-enter-btn home-enter-btn" type="button" aria-label="進入">
+      <span class="enter-text">ENTER</span>
+      <span class="enter-arrow" aria-hidden="true">↓</span>
+    </button>
+    <div class="page-hint" id="home-hint">TAP TO ENTER · 點擊進入</div>
   </section>
 
   <!-- ==================== Stage 2: 過渡頁 ==================== -->
@@ -27,6 +33,12 @@
     <div class="page-bg" id="welcome-bg" style="background-image: url('images/welcome-bg.jpg');"></div>
     <!-- 熱區：右下角「進館」文字位置 -->
     <a href="javascript:void(0)" id="enter-hotzone" class="hotzone welcome-hotzone" title="進入藏館"></a>
+    <!-- 明顯可見的進館按鈕 -->
+    <button id="welcome-enter-btn" class="page-enter-btn welcome-enter-btn" type="button" aria-label="進入藏館">
+      <span class="enter-text">進 入 藏 館</span>
+      <span class="enter-arrow" aria-hidden="true">→</span>
+    </button>
+    <div class="page-hint" id="welcome-hint">TAP TO ENTER · 點擊進入</div>
   </section>
 
   <!-- ==================== Stage 3: 3D 球體展廳 ==================== -->
