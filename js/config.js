@@ -24,9 +24,10 @@
      * 後續陸續提供照片時，只需在這裡加一行即可
      * ----------------------------------------------------------- */
     photos: [
-      // 照片待用戶提供，以下為預留範例格式：
-      // { id: 'p_001', src: 'uploads/photos/anpu_01.jpg', title: '關於我愛你' },
-      // { id: 'p_002', src: 'uploads/photos/anpu_02.jpg', title: '風塵之中' },
+      { id: 'p_001', src: 'uploads/photos/sample_01.jpg', title: '琥珀色的光' },
+      { id: 'p_002', src: 'uploads/photos/sample_02.jpg', title: '深藍色的夜' },
+      { id: 'p_003', src: 'uploads/photos/sample_03.jpg', title: '暖褐色的回聲' },
+      // 繼續新增：{ id: 'p_004', src: 'uploads/photos/your_photo.jpg', title: '您的標題' },
     ],
 
     /* -------------------------------------------------------------
