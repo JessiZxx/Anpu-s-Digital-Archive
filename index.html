@@ -41,7 +41,7 @@
     <div class="page-hint" id="welcome-hint">TAP TO ENTER · 點擊進入</div>
   </section>
 
-  <!-- ==================== Stage 3: 3D 球體展廳 ==================== -->
+  <!-- ==================== Stage 3: 球覽 (3D 球體) ==================== -->
   <section id="globe-stage" class="stage">
     <div id="globe-container"></div>
     <div id="globe-hint">
@@ -49,16 +49,23 @@
       <span class="dot">·</span>
       <span>點擊查看</span>
     </div>
+    <div class="globe-mode-toggle">
+      <button class="mode-btn is-active" data-mode="globe" type="button">球覽</button>
+      <button class="mode-btn" data-mode="tile" type="button">平鋪</button>
+    </div>
     <button class="back-btn" id="globe-back" aria-label="返回">←</button>
-    <button class="next-btn" id="globe-next" aria-label="進入媒體區">媒體區 →</button>
   </section>
 
-  <!-- ==================== Stage 4: 媒體滑動區（仿 beckyentertainment.co/media） ==================== -->
+  <!-- ==================== Stage 4: 平鋪 (媒體滑動區) ==================== -->
   <section id="media-stage" class="stage">
     <header class="media-header">
       <div class="media-title-wrap">
-        <h1 class="media-title">PRESS / MEDIA</h1>
+        <h1 class="media-title">球覽 / 平鋪</h1>
         <p class="media-subtitle">媒體報導與品牌合作</p>
+      </div>
+      <div class="media-mode-toggle">
+        <button class="mode-btn" data-mode="globe" type="button">球覽</button>
+        <button class="mode-btn is-active" data-mode="tile" type="button">平鋪</button>
       </div>
       <div class="media-toggle">
         <button class="media-toggle-btn is-active" data-mode="view" type="button">瀏覽</button>
@@ -89,10 +96,38 @@
     <div class="media-edit-card">
       <h3 id="media-edit-title">編輯條目</h3>
       <input class="media-edit-input" id="media-edit-title-input" type="text" placeholder="標題" maxlength="60">
-      <textarea class="media-edit-textarea" id="media-edit-text-input" placeholder="純文字內容（純文字條目用，圖片條目可留空）" maxlength="200"></textarea>
+      <textarea class="media-edit-textarea" id="media-edit-text-input" placeholder="純文字內容（純文字條目用，圖片條目可留空）" maxlength="500"></textarea>
+      <textarea class="media-edit-textarea" id="media-edit-description-input" placeholder="簡介（圖片條目用，純文字條目可留空；最多 200 字）" maxlength="200"></textarea>
+      <div class="media-edit-audio">
+        <label class="media-edit-audio-label" for="media-edit-audio-input">
+          <span class="media-edit-audio-icon">🎙</span>
+          <span class="media-edit-audio-text">上傳語音 / 錄音</span>
+          <span class="media-edit-audio-name" id="media-edit-audio-name">（未選擇）</span>
+        </label>
+        <input id="media-edit-audio-input" type="file" accept="audio/*" hidden>
+        <button class="media-edit-audio-clear" id="media-edit-audio-clear" type="button" hidden>清除</button>
+      </div>
       <div class="media-edit-actions">
         <button class="media-edit-cancel" id="media-edit-cancel" type="button">取消</button>
         <button class="media-edit-confirm" id="media-edit-confirm" type="button">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 媒體：詳情面板（球覽模式點擊開啟） ==================== -->
+  <div class="media-detail-modal" id="media-detail-modal" aria-hidden="true">
+    <div class="media-detail-card">
+      <button class="media-detail-close" id="media-detail-close" type="button" aria-label="關閉">×</button>
+      <div class="media-detail-image-wrap" id="media-detail-image-wrap">
+        <img id="media-detail-img" src="" alt="" draggable="false">
+      </div>
+      <div class="media-detail-body">
+        <h3 id="media-detail-title" class="media-detail-title">—</h3>
+        <p id="media-detail-text" class="media-detail-text"></p>
+        <p id="media-detail-description" class="media-detail-description"></p>
+        <div class="media-detail-audio-wrap" id="media-detail-audio-wrap" hidden>
+          <audio id="media-detail-audio" controls preload="metadata"></audio>
+        </div>
       </div>
     </div>
   </div>

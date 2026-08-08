@@ -1,27 +1,21 @@
 // ============================================================
 // Anpu's Digital Archive · 安溥的數字藏館
-// 純代碼框架：頁面跳轉 + 3D 深色磨砂球體 + 圖片預覽彈窗
-// 所有圖片均為 images/ 路徑佔位，請手動上傳原圖替換
+// 球覽（3D 球體）+ 平鋪（滑動卡片）共享同一份資料
+// 圖片可加簡介、純文字可上傳音檔
 // ============================================================
 
 import * as THREE from 'three';
 
 // ============================================================
-// 0. 圖片佔位配置（上傳對應文件即可，無需修改代碼）
+// 0. 預設素材（圖片佔位，上傳圖片即覆蓋預設）
 // ============================================================
-const PHOTOS = [
-  { id: 'p01', src: 'images/photo-01.jpg', title: '' },
-  { id: 'p02', src: 'images/photo-02.jpg', title: '' },
-  { id: 'p03', src: 'images/photo-03.jpg', title: '' },
-  { id: 'p04', src: 'images/photo-04.jpg', title: '' },
-  { id: 'p05', src: 'images/photo-05.jpg', title: '' },
-  { id: 'p06', src: 'images/photo-06.jpg', title: '' },
-  { id: 'p07', src: 'images/photo-07.jpg', title: '' },
-  { id: 'p08', src: 'images/photo-08.jpg', title: '' },
-  { id: 'p09', src: 'images/photo-09.jpg', title: '' },
-  { id: 'p10', src: 'images/photo-10.jpg', title: '' },
-  { id: 'p11', src: 'images/photo-11.jpg', title: '' },
-  { id: 'p12', src: 'images/photo-12.jpg', title: '' },
+const DEFAULT_PHOTOS = [
+  { id: 'p01', src: 'images/photo-01.jpg', title: 'PAVILION 2024' },
+  { id: 'p02', src: 'images/photo-02.jpg', title: 'INDIE LIVE' },
+  { id: 'p03', src: 'images/photo-03.jpg', title: 'CONCERT TAI' },
+  { id: 'p04', src: 'images/photo-04.jpg', title: 'STAGE MOMENT' },
+  { id: 'p05', src: 'images/photo-05.jpg', title: 'BRAND SHOOT' },
+  { id: 'p06', src: 'images/photo-06.jpg', title: 'FESTIVAL' },
 ];
 
 // ============================================================
@@ -38,6 +32,7 @@ let currentStage = 'home';
 
 function goTo(target, direction = 'forward') {
   if (target === currentStage) return Promise.resolve();
+  if (!stages[target]) return Promise.resolve();
 
   const dirClass = direction === 'forward' ? 'active-down' : 'active-up';
   wipe.classList.add(dirClass);
@@ -51,7 +46,7 @@ function goTo(target, direction = 'forward') {
 
       if (target === 'globe') {
         if (!globeApp.inited) globeApp.init();
-        else globeApp.onShow();
+        else { globeApp.refresh(); globeApp.onShow(); }
       } else {
         globeApp.onHide();
       }
@@ -70,32 +65,43 @@ function goTo(target, direction = 'forward') {
   });
 }
 
-// 熱區 + 明顯按鈕 點擊事件綁定
-document.getElementById('home-hotzone').addEventListener('click', () => goTo('welcome', 'forward'));
-document.getElementById('home-enter-btn').addEventListener('click', () => goTo('welcome', 'forward'));
-document.getElementById('enter-hotzone').addEventListener('click', () => goTo('globe', 'forward'));
-document.getElementById('welcome-enter-btn').addEventListener('click', () => goTo('globe', 'forward'));
-document.getElementById('globe-back').addEventListener('click', () => goTo('welcome', 'backward'));
-document.getElementById('globe-next').addEventListener('click', () => goTo('media', 'forward'));
-document.getElementById('media-back').addEventListener('click', () => goTo('globe', 'backward'));
+// 事件綁定
+document.getElementById('home-hotzone').addEventListener('click',     () => goTo('welcome', 'forward'));
+document.getElementById('home-enter-btn').addEventListener('click',   () => goTo('welcome', 'forward'));
+document.getElementById('enter-hotzone').addEventListener('click',    () => goTo('globe',   'forward'));
+document.getElementById('welcome-enter-btn').addEventListener('click',() => goTo('globe',   'forward'));
+document.getElementById('globe-back').addEventListener('click',       () => goTo('welcome', 'backward'));
+document.getElementById('media-back').addEventListener('click',       () => goTo('globe',   'backward'));
+
+// 球覽 ↔ 平鋪 切換按鈕
+document.querySelectorAll('.globe-mode-toggle .mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode;
+    if (mode === 'tile') goTo('media', 'forward');
+  });
+});
+document.querySelectorAll('.media-mode-toggle .mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode;
+    if (mode === 'globe') goTo('globe', 'backward');
+  });
+});
 
 // 整頁可點擊作為備援（首頁 → 歡迎頁；歡迎頁 → 球體）
 document.getElementById('home-stage').addEventListener('click', e => {
-  // 已在過場中忽略
   if (currentStage !== 'home') return;
-  // 已在動畫中忽略
   if (document.getElementById('trans-wipe').classList.contains('active-down')) return;
-  // 若點到按鈕或熱區則不重複觸發（會由它們自己處理）
   if (e.target.closest('.page-enter-btn, .hotzone')) return;
   goTo('welcome', 'forward');
 });
 
-// ESC 返回上一頁
+// ESC 返回上一頁 / 關彈窗
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    if (mediaApp.editModalOpen)   { mediaApp.closeEditModal(); return; }
-    if (mediaApp.confirmOpen)     { mediaApp.closeConfirm(); return; }
-    if (lightbox.isOpen)          { lightbox.close(); return; }
+    if (mediaApp.editModalOpen)   { mediaApp.closeEditModal();  return; }
+    if (mediaApp.confirmOpen)     { mediaApp.closeConfirm();    return; }
+    if (mediaApp.detailOpen)      { mediaApp.closeDetail();     return; }
+    if (lightbox.isOpen)          { lightbox.close();           return; }
     if (currentStage === 'media') goTo('globe', 'backward');
     else if (currentStage === 'globe')   goTo('welcome', 'backward');
     else if (currentStage === 'welcome') goTo('home', 'backward');
@@ -134,9 +140,9 @@ const lightbox = {
 lightbox.bind();
 
 // ============================================================
-// 3. 3D 深色磨砂球體展廳
+// 3. 3D 深色磨砂球體展廳（球覽模式）
 // ============================================================
-function fallbackTexture() {
+function fallbackTexture(label = '影像佔位') {
   const W = 512, H = 512;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
@@ -150,7 +156,7 @@ function fallbackTexture() {
   ctx.font = '500 22px -apple-system, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('影像佔位', W / 2, H / 2);
+  ctx.fillText(label, W / 2, H / 2);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -196,6 +202,9 @@ const globeApp = {
   inited: false,
   rafId: null,
 
+  // 當前已建立 mesh 的 item id 對照（用於 refresh 增量）
+  builtIds: new Set(),
+
   init() {
     if (this.inited) return;
     this.inited = true;
@@ -233,7 +242,7 @@ const globeApp = {
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
 
-    this.buildCards();
+    this.refresh();
     this.bindInteraction();
     this.animate();
 
@@ -267,8 +276,31 @@ const globeApp = {
     this.scene.add(inner);
   },
 
-  async buildCards() {
-    const items = PHOTOS.filter(p => p.src);
+  // 取得所有「圖片型」資料（球體只放圖片，不放純文字）
+  collectImageItems() {
+    const userItems = (mediaApp?.data || []).filter(i => i.type === 'image' && i.src);
+    if (userItems.length) return userItems;
+    // 若使用者尚未上傳，使用預設佔位
+    return DEFAULT_PHOTOS.map(p => ({ ...p, type: 'image', text: '', description: '', audio: '' }));
+  },
+
+  // 重建球體卡片（資料變動時呼叫）
+  async refresh() {
+    if (!this.inited) return;
+    const items = this.collectImageItems();
+
+    // 移除舊的
+    this.cardMeshes.forEach(m => {
+      this.cardsGroup.remove(m);
+      if (m.geometry) m.geometry.dispose();
+      if (m.material) {
+        if (m.material.map) m.material.map.dispose();
+        m.material.dispose();
+      }
+    });
+    this.cardMeshes = [];
+    this.builtIds = new Set();
+
     if (!items.length) return;
 
     const R = 3.45;
@@ -378,7 +410,8 @@ const globeApp = {
       this.setPointer(e);
       const card = this.pickCard();
       if (card && card.userData.item) {
-        lightbox.open(card.userData.item.src);
+        // 球覽模式：點擊開啟詳情面板（含音檔播放）
+        mediaApp.openDetail(card.userData.item);
       }
     }
   },
@@ -452,28 +485,23 @@ const globeApp = {
 };
 
 // ============================================================
-// 4. 頁面初始狀態
-// ============================================================
-// 首頁即為初始頁面，無需額外加載動畫
-
-// ============================================================
-// 5. 媒體滑動區（Stage 4）
-// 仿 beckyentertainment.co/media：水平滑動卡片
-// 支援瀏覽/管理模式、上傳/刪除/編輯
+// 4. 媒體滑動區（平鋪模式）
+// 圖片型 → 顯示圖片、標題、簡介、音檔
+// 文字型 → 顯示純文字卡片、標題、音檔
 // ============================================================
 const MEDIA_STORAGE_KEY = 'anpu-archive-media-v1';
+
 const DEFAULT_MEDIA = [
-  // 三個示範卡片（純文字，呼應 becky 站點的條目）
-  { id: 'm_001', type: 'text', src: '',     text: 'Represented by LUNARI Global',         title: 'REPRESENTED BY LUNARI GLOBAL' },
-  { id: 'm_002', type: 'text', src: '',     text: 'BIOACTIVE+ Presenter',                  title: 'BIOACTIVE+ PRESENTER' },
-  { id: 'm_003', type: 'text', src: '',     text: 'Represented by WILD Record Label',     title: 'REPRESENTED BY WILD RECORD LABEL' },
-  { id: 'm_004', type: 'text', src: '',     text: "TOD'S Brand Ambassador",               title: "TOD'S BRAND AMBASSADOR" },
-  { id: 'm_005', type: 'text', src: '',     text: 'Tao Kae Noi Brand Ambassador',          title: 'TAO KAE NOI BRAND AMBASSADOR' },
-  { id: 'm_006', type: 'text', src: '',     text: 'Represented by Creative Artists Agency (CAA)', title: 'REPRESENTED BY CREATIVE ARTISTS AGENCY (CAA)' },
-  { id: 'm_007', type: 'text', src: '',     text: 'Sunsilk Thailand Brand Presenter',     title: 'SUNSILK THAILAND BRAND PRESENTER' },
-  { id: 'm_008', type: 'text', src: '',     text: 'OPPO Thailand Presenter',               title: 'OPPO THAILAND PRESENTER' },
-  { id: 'm_009', type: 'text', src: '',     text: 'First Muse of Harper\'s BAZAAR Thailand', title: "FIRST MUSE OF HARPER'S BAZAAR THAILAND" },
-  { id: 'm_010', type: 'text', src: '',     text: 'L\'Oréal Paris Ambassador',             title: "L'ORÉAL PARIS AMBASSADOR" }
+  { id: 'm_001', type: 'text', src: '', text: 'Represented by LUNARI Global',     title: 'REPRESENTED BY LUNARI GLOBAL', description: '', audio: '' },
+  { id: 'm_002', type: 'text', src: '', text: 'BIOACTIVE+ Presenter',              title: 'BIOACTIVE+ PRESENTER',         description: '', audio: '' },
+  { id: 'm_003', type: 'text', src: '', text: 'Represented by WILD Record Label', title: 'REPRESENTED BY WILD RECORD LABEL', description: '', audio: '' },
+  { id: 'm_004', type: 'text', src: '', text: "TOD'S Brand Ambassador",           title: "TOD'S BRAND AMBASSADOR",       description: '', audio: '' },
+  { id: 'm_005', type: 'text', src: '', text: 'Tao Kae Noi Brand Ambassador',      title: 'TAO KAE NOI BRAND AMBASSADOR', description: '', audio: '' },
+  { id: 'm_006', type: 'text', src: '', text: 'Represented by Creative Artists Agency (CAA)', title: 'REPRESENTED BY CREATIVE ARTISTS AGENCY (CAA)', description: '', audio: '' },
+  { id: 'm_007', type: 'text', src: '', text: 'Sunsilk Thailand Brand Presenter', title: 'SUNSILK THAILAND BRAND PRESENTER', description: '', audio: '' },
+  { id: 'm_008', type: 'text', src: '', text: 'OPPO Thailand Presenter',           title: 'OPPO THAILAND PRESENTER',      description: '', audio: '' },
+  { id: 'm_009', type: 'text', src: '', text: "First Muse of Harper's BAZAAR Thailand", title: "FIRST MUSE OF HARPER'S BAZAAR THAILAND", description: '', audio: '' },
+  { id: 'm_010', type: 'text', src: '', text: "L'Oréal Paris Ambassador",          title: "L'ORÉAL PARIS AMBASSADOR",     description: '', audio: '' }
 ];
 
 const mediaApp = {
@@ -486,19 +514,37 @@ const mediaApp = {
   editTitle: null,
   editTitleInput: null,
   editTextInput: null,
+  editDescInput: null,
+  editAudioInput: null,
+  editAudioName: null,
+  editAudioClear: null,
   editConfirm: null,
   editCancel: null,
+  detailModal: null,
+  detailImgWrap: null,
+  detailImg: null,
+  detailTitle: null,
+  detailText: null,
+  detailDescription: null,
+  detailAudioWrap: null,
+  detailAudio: null,
+  detailClose: null,
   confirmModal: null,
   confirmDelete: null,
   confirmCancel: null,
   toggleBtns: null,
 
   data: [],
-  mode: 'view',           // 'view' | 'manage'
+  mode: 'view',
   editModalOpen: false,
   confirmOpen: false,
-  editTargetId: null,     // 編輯時的目標 id；null 代表新增
-  pendingDeleteId: null,  // 待刪除的 id
+  detailOpen: false,
+  editTargetId: null,
+  pendingDeleteId: null,
+  // 編輯時暫存新音檔（避免與既有 audio 欄位混淆）
+  _newAudioDataUrl: null,
+  _newAudioName: null,
+  _clearingAudio: false,
 
   init() {
     this.el = document.getElementById('media-stage');
@@ -510,8 +556,21 @@ const mediaApp = {
     this.editTitle = document.getElementById('media-edit-title');
     this.editTitleInput = document.getElementById('media-edit-title-input');
     this.editTextInput = document.getElementById('media-edit-text-input');
+    this.editDescInput  = document.getElementById('media-edit-description-input');
+    this.editAudioInput = document.getElementById('media-edit-audio-input');
+    this.editAudioName  = document.getElementById('media-edit-audio-name');
+    this.editAudioClear = document.getElementById('media-edit-audio-clear');
     this.editConfirm = document.getElementById('media-edit-confirm');
-    this.editCancel = document.getElementById('media-edit-cancel');
+    this.editCancel  = document.getElementById('media-edit-cancel');
+    this.detailModal = document.getElementById('media-detail-modal');
+    this.detailImgWrap = document.getElementById('media-detail-image-wrap');
+    this.detailImg  = document.getElementById('media-detail-img');
+    this.detailTitle = document.getElementById('media-detail-title');
+    this.detailText  = document.getElementById('media-detail-text');
+    this.detailDescription = document.getElementById('media-detail-description');
+    this.detailAudioWrap = document.getElementById('media-detail-audio-wrap');
+    this.detailAudio = document.getElementById('media-detail-audio');
+    this.detailClose = document.getElementById('media-detail-close');
     this.confirmModal = document.getElementById('media-confirm-modal');
     this.confirmDelete = document.getElementById('media-confirm-delete');
     this.confirmCancel = document.getElementById('media-confirm-cancel');
@@ -527,9 +586,17 @@ const mediaApp = {
       const raw = localStorage.getItem(MEDIA_STORAGE_KEY);
       if (raw) {
         const arr = JSON.parse(raw);
-        if (Array.isArray(arr)) { this.data = arr; return; }
+        if (Array.isArray(arr)) {
+          // 補齊欄位
+          this.data = arr.map(x => ({
+            type: 'image', src: '', text: '', title: '',
+            description: '', audio: '',
+            ...x
+          }));
+          return;
+        }
       }
-    } catch (e) { /* 忽略，採用預設 */ }
+    } catch (e) { /* ignore */ }
     this.data = DEFAULT_MEDIA.slice();
     this.persist();
   },
@@ -540,41 +607,66 @@ const mediaApp = {
   },
 
   bindEvents() {
-    // 模式切換
     this.toggleBtns.forEach(btn => {
       btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
     });
 
-    // 上傳檔案
     this.fileInput.addEventListener('change', e => {
       const files = Array.from(e.target.files || []);
       files.forEach(f => this.uploadFile(f));
       e.target.value = '';
     });
 
-    // 新增純文字條目
     this.addTextBtn.addEventListener('click', () => this.openEditModal(null, true));
 
-    // 編輯對話框
     this.editCancel.addEventListener('click', () => this.closeEditModal());
     this.editConfirm.addEventListener('click', () => this.saveEdit());
     this.editModal.addEventListener('click', e => {
       if (e.target === this.editModal) this.closeEditModal();
     });
 
-    // 刪除確認對話框
-    this.confirmCancel.addEventListener('click', () => this.closeConfirm());
-    this.confirmDelete.addEventListener('click', () => this.confirmDeleteNow());
-    this.confirmModal.addEventListener('click', e => {
-      if (e.target === this.confirmModal) this.closeConfirm();
+    this.editAudioInput.addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      this.fileToDataUrl(f).then(url => {
+        this._newAudioDataUrl = url;
+        this._newAudioName = f.name;
+        this._newAudioMime = f.type;
+        this.editAudioName.textContent = f.name;
+        this.editAudioClear.hidden = false;
+        this._clearingAudio = false;
+      });
+    });
+    this.editAudioClear.addEventListener('click', () => {
+      this._newAudioDataUrl = null;
+      this._newAudioName = null;
+      this._clearingAudio = true;
+      this.editAudioInput.value = '';
+      this.editAudioName.textContent = '（未選擇）';
+      this.editAudioClear.hidden = true;
     });
 
-    // Enter 儲存（Shift+Enter 換行）
     this.editTitleInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); this.saveEdit(); }
     });
     this.editTextInput.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.saveEdit(); }
+    });
+    this.editDescInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.saveEdit(); }
+    });
+
+    // 詳情面板
+    this.detailClose.addEventListener('click', () => this.closeDetail());
+    this.detailModal.addEventListener('click', e => {
+      if (e.target === this.detailModal) this.closeDetail();
+    });
+
+    // 刪除確認
+    this.confirmCancel.addEventListener('click', () => this.closeConfirm());
+    this.confirmDelete.addEventListener('click', () => this.confirmDeleteNow());
+    this.confirmModal.addEventListener('click', e => {
+      if (e.target === this.confirmModal) this.closeConfirm();
     });
   },
 
@@ -596,14 +688,19 @@ const mediaApp = {
     slide.className = 'media-slide' + (this.mode === 'manage' ? ' is-manage' : '');
     slide.dataset.id = item.id;
 
-    // 圖片 / 純文字 容器
+    const isText = item.type === 'text';
+
+    // 主視覺容器
     const wrap = document.createElement('div');
-    wrap.className = 'media-slide-image-wrap' + (item.type === 'text' ? ' is-text' : '');
+    wrap.className = 'media-slide-image-wrap' + (isText ? ' is-text' : '');
     wrap.addEventListener('click', e => {
-      // 管理模式下點圖片 → 編輯
-      if (this.mode === 'manage') { e.stopPropagation(); this.openEditModal(item.id, false); return; }
-      // 瀏覽模式：點圖片開放大預覽
-      if (item.type === 'image' && item.src) lightbox.open(item.src);
+      if (this.mode === 'manage') {
+        e.stopPropagation();
+        this.openEditModal(item.id, false);
+        return;
+      }
+      // 瀏覽模式：點圖片開啟詳情（平鋪也用同一個詳情面板）
+      this.openDetail(item);
     });
 
     if (item.type === 'image' && item.src) {
@@ -620,7 +717,7 @@ const mediaApp = {
       wrap.appendChild(q);
     }
 
-    // 刪除按鈕
+    // 刪除按鈕（管理模式下顯示）
     const del = document.createElement('button');
     del.className = 'media-delete-btn';
     del.type = 'button';
@@ -632,13 +729,36 @@ const mediaApp = {
     });
     wrap.appendChild(del);
 
+    slide.appendChild(wrap);
+
     // 標題
     const title = document.createElement('h3');
     title.className = 'media-slide-title';
     title.textContent = item.title || '';
-
-    slide.appendChild(wrap);
     slide.appendChild(title);
+
+    // 簡介 + 音檔（平鋪模式直接顯示）
+    const meta = document.createElement('div');
+    meta.className = 'media-slide-meta';
+
+    if (item.description) {
+      const desc = document.createElement('p');
+      desc.className = 'media-slide-description';
+      desc.textContent = item.description;
+      meta.appendChild(desc);
+    }
+
+    if (item.audio) {
+      const audio = document.createElement('audio');
+      audio.className = 'media-slide-audio';
+      audio.src = item.audio;
+      audio.controls = true;
+      audio.preload = 'metadata';
+      meta.appendChild(audio);
+    }
+
+    if (meta.children.length) slide.appendChild(meta);
+
     return slide;
   },
 
@@ -651,11 +771,14 @@ const mediaApp = {
       type: 'image',
       src: dataUrl,
       text: '',
-      title: (file.name || '未命名媒體').replace(/\.[^.]+$/, '').slice(0, 60) || '未命名媒體'
+      title: (file.name || '未命名媒體').replace(/\.[^.]+$/, '').slice(0, 60) || '未命名媒體',
+      description: '',
+      audio: ''
     };
     this.data.push(item);
     this.persist();
     this.render();
+    this.refreshGlobe();
   },
 
   fileToDataUrl(file) {
@@ -671,14 +794,25 @@ const mediaApp = {
   openEditModal(id, isNew) {
     this.editTargetId = id;
     this.editTitle.textContent = isNew ? '新增條目' : '編輯條目';
+    this._newAudioDataUrl = null;
+    this._newAudioName = null;
+    this._clearingAudio = false;
+    this.editAudioInput.value = '';
+
     if (isNew) {
       this.editTitleInput.value = '';
       this.editTextInput.value = '';
+      this.editDescInput.value = '';
+      this.editAudioName.textContent = '（未選擇）';
+      this.editAudioClear.hidden = true;
     } else {
       const item = this.data.find(x => x.id === id);
       if (!item) return;
       this.editTitleInput.value = item.title || '';
       this.editTextInput.value = item.text || '';
+      this.editDescInput.value = item.description || '';
+      this.editAudioName.textContent = item.audio ? '已綁定音檔（可重新上傳）' : '（未選擇）';
+      this.editAudioClear.hidden = !item.audio;
     }
     this.editModal.classList.add('open');
     this.editModal.setAttribute('aria-hidden', 'false');
@@ -691,37 +825,99 @@ const mediaApp = {
     this.editModal.setAttribute('aria-hidden', 'true');
     this.editModalOpen = false;
     this.editTargetId = null;
+    this._newAudioDataUrl = null;
+    this._newAudioName = null;
+    this._clearingAudio = false;
   },
 
   saveEdit() {
     const title = this.editTitleInput.value.trim() || '未命名條目';
     const text  = this.editTextInput.value.trim();
+    const desc  = this.editDescInput.value.trim();
 
     if (this.editTargetId) {
       const item = this.data.find(x => x.id === this.editTargetId);
-      if (item) {
-        item.title = title;
-        item.text  = text;
-        if (item.type === 'text' && !text) {
-          // 純文字條目若無內容，給個提示後返回
-          this.editTextInput.focus();
-          return;
-        }
+      if (!item) { this.closeEditModal(); return; }
+      // 純文字條目：必須有文字內容
+      if (item.type === 'text' && !text) {
+        this.editTextInput.focus();
+        return;
+      }
+      item.title = title;
+      item.text  = text;
+      item.description = desc;
+      // 音檔更新
+      if (this._clearingAudio) {
+        item.audio = '';
+      } else if (this._newAudioDataUrl) {
+        item.audio = this._newAudioDataUrl;
       }
     } else {
       // 新增純文字條目
       if (!text) { this.editTextInput.focus(); return; }
-      this.data.push({
+      const item = {
         id: 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
         type: 'text',
         src: '',
         text,
-        title
-      });
+        title,
+        description: desc,
+        audio: this._newAudioDataUrl || ''
+      };
+      this.data.push(item);
     }
     this.persist();
     this.render();
+    this.refreshGlobe();
     this.closeEditModal();
+  },
+
+  // ===== 詳情面板（球覽 / 平鋪 點擊照片都會用） =====
+  openDetail(item) {
+    if (!item) return;
+    const isText = item.type === 'text';
+    this.detailImgWrap.classList.toggle('is-text', isText);
+    this.detailImgWrap.innerHTML = '';
+
+    if (isText) {
+      const q = document.createElement('div');
+      q.className = 'media-detail-quote';
+      q.textContent = item.text || '';
+      this.detailImgWrap.appendChild(q);
+    } else {
+      const img = document.createElement('img');
+      img.src = item.src || '';
+      img.alt = item.title || '';
+      img.draggable = false;
+      this.detailImgWrap.appendChild(img);
+    }
+
+    this.detailTitle.textContent = item.title || '—';
+    this.detailText.textContent = item.text || '';
+    this.detailDescription.textContent = item.description || '';
+
+    // 音檔
+    if (item.audio) {
+      this.detailAudioWrap.hidden = false;
+      this.detailAudio.src = item.audio;
+    } else {
+      this.detailAudioWrap.hidden = true;
+      this.detailAudio.removeAttribute('src');
+    }
+
+    this.detailModal.classList.add('open');
+    this.detailModal.setAttribute('aria-hidden', 'false');
+    this.detailOpen = true;
+  },
+
+  closeDetail() {
+    this.detailModal.classList.remove('open');
+    this.detailModal.setAttribute('aria-hidden', 'true');
+    this.detailOpen = false;
+    if (this.detailAudio) {
+      try { this.detailAudio.pause(); } catch (e) {}
+      this.detailAudio.removeAttribute('src');
+    }
   },
 
   // ===== 刪除 =====
@@ -747,7 +943,13 @@ const mediaApp = {
     this.data = this.data.filter(x => x.id !== this.pendingDeleteId);
     this.persist();
     this.render();
+    this.refreshGlobe();
     this.closeConfirm();
+  },
+
+  // 通知球體刷新
+  refreshGlobe() {
+    if (globeApp && globeApp.inited) globeApp.refresh();
   },
 
   // ===== 切換可見性 =====
@@ -757,9 +959,9 @@ const mediaApp = {
   },
 
   onHide() {
-    // 關閉所有彈窗，避免殘留
     if (this.editModalOpen)  this.closeEditModal();
     if (this.confirmOpen)    this.closeConfirm();
+    if (this.detailOpen)     this.closeDetail();
   }
 };
 
