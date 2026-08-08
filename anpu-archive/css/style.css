@@ -1,0 +1,388 @@
+/* ==========================================
+   Anpu's Digital Archive · 安溥的數字檔案
+   ========================================== */
+
+/* ---------- Reset & Base ---------- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-deep: #0d0b0a;
+  --bg-warm: #1a1614;
+  --cream: #f0e8d8;
+  --cream-dim: #c8bfae;
+  --gold: #c9a96e;
+  --gold-dim: #a68a52;
+  --text-primary: #e8dcc8;
+  --text-secondary: #9a8e7c;
+  --overlay-dark: rgba(8, 6, 5, 0.92);
+  --transition-slow: 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+  --transition-med: 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  font-family: "Noto Serif TC", "Songti TC", "STSong", "SimSun", "PingFang TC", "Microsoft YaHei", serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: pan-x pan-y;
+}
+
+body {
+  position: relative;
+}
+
+/* ---------- Curtain Stage ---------- */
+#curtain-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #0a0807;
+  transition: opacity var(--transition-slow), visibility var(--transition-slow);
+}
+
+#curtain-stage.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#curtain-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#curtain-hint {
+  position: absolute;
+  bottom: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--cream-dim);
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  opacity: 0.8;
+  animation: hint-pulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+
+#curtain-hint.fading {
+  opacity: 0;
+}
+
+.hint-arrow {
+  font-size: 18px;
+  animation: hint-arrow-move 1.8s ease-in-out infinite;
+}
+
+.hint-arrow:last-child {
+  animation-delay: 0.3s;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes hint-arrow-move {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+
+/* Welcome Overlay */
+#welcome-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+#welcome-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#welcome-text {
+  font-size: clamp(28px, 5vw, 48px);
+  color: var(--cream);
+  letter-spacing: 0.3em;
+  font-weight: 400;
+  text-shadow: 0 0 40px rgba(201, 169, 110, 0.2);
+}
+
+#enter-gate {
+  background: none;
+  border: 1px solid var(--gold-dim);
+  color: var(--cream-dim);
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.25em;
+  padding: 14px 48px;
+  cursor: pointer;
+  transition: all var(--transition-med);
+  -webkit-tap-highlight-color: transparent;
+}
+
+#enter-gate:hover {
+  border-color: var(--gold);
+  color: var(--cream);
+  background: rgba(201, 169, 110, 0.08);
+  box-shadow: 0 0 30px rgba(201, 169, 110, 0.1);
+}
+
+/* ---------- Globe Stage ---------- */
+#globe-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, #1a1614 0%, #0d0b0a 100%);
+}
+
+#globe-container {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+#title-area {
+  position: absolute;
+  top: clamp(24px, 5vh, 48px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  text-align: center;
+  pointer-events: none;
+}
+
+#title-area h1 {
+  font-size: clamp(16px, 3vw, 22px);
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  color: var(--cream);
+  text-transform: uppercase;
+}
+
+#title-area .subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.3em;
+  margin-top: 6px;
+}
+
+#particles-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ---------- Modals ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--transition-med), visibility var(--transition-med);
+}
+
+.modal.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-dark);
+  cursor: pointer;
+}
+
+.modal-content {
+  position: relative;
+  z-index: 1;
+  max-width: 90vw;
+  max-height: 85vh;
+}
+
+/* Photo Modal */
+.photo-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+#photo-modal-img {
+  max-width: 85vw;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: transform var(--transition-med);
+}
+
+#photo-modal-caption {
+  color: var(--text-secondary);
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-align: center;
+  min-height: 20px;
+}
+
+/* Quote Modal */
+.quote-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 40px;
+  max-width: 500px;
+  text-align: center;
+}
+
+#quote-modal-text {
+  font-size: clamp(20px, 4vw, 28px);
+  color: var(--cream);
+  line-height: 1.8;
+  letter-spacing: 0.15em;
+  font-weight: 300;
+}
+
+#audio-play-btn {
+  background: none;
+  border: none;
+  color: var(--gold);
+  cursor: pointer;
+  padding: 12px;
+  transition: all var(--transition-med);
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#audio-play-btn:hover {
+  color: #e0c080;
+  transform: scale(1.05);
+}
+
+#audio-play-btn:active {
+  transform: scale(0.95);
+}
+
+#audio-play-btn svg {
+  width: 48px;
+  height: 48px;
+}
+
+#audio-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 0.2em;
+  margin-top: -16px;
+}
+
+/* ---------- Footer ---------- */
+#site-footer {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+#site-footer p {
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.2em;
+  opacity: 0.5;
+}
+
+/* ---------- Loading ---------- */
+#loading-indicator {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-deep);
+  transition: opacity 0.6s;
+}
+
+#loading-indicator.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  margin: 0 6px;
+  animation: loading-bounce 1.2s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loading-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  #curtain-hint {
+    bottom: 16vh;
+    font-size: 13px;
+    gap: 12px;
+  }
+
+  #enter-gate {
+    padding: 12px 36px;
+    font-size: 14px;
+  }
+
+  .quote-content {
+    padding: 24px;
+    gap: 24px;
+  }
+
+  #title-area {
+    top: 20px;
+  }
+}
+
+@media (min-width: 1200px) {
+  #title-area h1 {
+    font-size: 24px;
+  }
+}

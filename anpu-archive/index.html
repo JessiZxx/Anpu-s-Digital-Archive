@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Anpu's Digital Archive · 安溥的數字檔案</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ==================== 珠簾開場 ==================== -->
+  <div id="curtain-stage">
+    <canvas id="curtain-canvas"></canvas>
+    <div id="curtain-hint">
+      <span class="hint-arrow">←</span>
+      <span class="hint-text">撥開珠簾</span>
+      <span class="hint-arrow">→</span>
+    </div>
+    <div id="welcome-overlay">
+      <p id="welcome-text">你來了。</p>
+      <button id="enter-gate">輕觸進入</button>
+    </div>
+  </div>
+
+  <!-- ==================== 主場景 ==================== -->
+  <div id="globe-stage">
+    <div id="globe-container"></div>
+
+    <div id="title-area">
+      <h1>Anpu's Digital Archive</h1>
+      <p class="subtitle">安溥的數字檔案</p>
+    </div>
+
+    <div id="particles-bg"></div>
+  </div>
+
+  <!-- ==================== 照片彈窗 ==================== -->
+  <div id="photo-modal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content photo-content">
+      <img id="photo-modal-img" src="" alt="" draggable="false">
+      <p id="photo-modal-caption"></p>
+    </div>
+  </div>
+
+  <!-- ==================== 語錄彈窗 ==================== -->
+  <div id="quote-modal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content quote-content">
+      <p id="quote-modal-text"></p>
+      <button id="audio-play-btn" aria-label="播放語音">
+        <svg id="play-icon" viewBox="0 0 24 24" width="48" height="48">
+          <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <polygon points="9,7 9,17 18,12" fill="currentColor"/>
+        </svg>
+        <svg id="pause-icon" viewBox="0 0 24 24" width="48" height="48" style="display:none;">
+          <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="8" y="7" width="2.5" height="10" fill="currentColor"/>
+          <rect x="13.5" y="7" width="2.5" height="10" fill="currentColor"/>
+        </svg>
+      </button>
+      <p id="audio-hint">輕觸聆聽</p>
+    </div>
+  </div>
+
+  <!-- ==================== 底部簽名 ==================== -->
+  <footer id="site-footer">
+    <p>一份安靜的禮物，只獻給懂得的人。</p>
+  </footer>
+
+  <!-- Three.js -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
