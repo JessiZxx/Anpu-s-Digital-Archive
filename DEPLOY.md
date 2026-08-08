@@ -1,172 +1,244 @@
-# 🚀 GitHub Pages 部署指南
+# 安溥的數字藏館 · 部署指南
 
-把「安溥的數字藏館」部署到 GitHub Pages，讓任何裝置都能打開。
-
----
-
-## 方案 A：使用自動部署腳本（推薦）
-
-### 1. 把程式碼拿到本機
-
-從沙盒下載這些檔案到本機任意資料夾：
-
-```
-anpu-archive/
-├── index.html
-├── css/style.css
-├── js/main.js
-├── assets/
-├── deploy.sh       ← 一鍵部署腳本
-├── DEPLOY.md
-├── README.md
-└── .gitignore
-```
-
-### 2. 準備 GitHub Token
-
-1. 開啟 https://github.com/settings/tokens
-2. 點 **Generate new token** → **Classic**
-3. Note: 填 `anpu-archive-deploy`
-4. Expiration: 選 **No expiration**（或自訂）
-5. Scopes: 勾選 **`repo`**（完整）
-6. 點 **Generate token**
-7. **複製 token**（只會顯示一次！）
-
-### 3. 執行部署
-
-打開終端機（macOS Terminal / Windows PowerShell）：
-
-```bash
-cd anpu-archive
-bash deploy.sh
-```
-
-或用一行命令直接推（替換 `YOUR_TOKEN`）：
-
-```bash
-git push https://YOUR_TOKEN@github.com/JessiZxx/Anpu-s-Digital-Archive.git main
-```
+> 順序強制：先推 GitHub → 再部署 Vercel，**不可顛倒**
 
 ---
 
-## 方案 B：完全手動部署
+## 📍 階段 ① 推送至 GitHub
+
+### 1.1 確認本機狀態
+
+打開終端機，進入專案資料夾，執行：
 
 ```bash
-# 1. 進入資料夾
-cd anpu-archive
+cd /path/to/Anpu-s-Digital-Archive
+git status
+```
 
-# 2. 初始化 git
-git init
-git config user.name "你的名字"
-git config user.email "你的郵箱"
+**應該看到**：
+```
+On branch main
+Your branch is up to date with 'origin/main'.
+nothing to commit, working tree clean
+```
 
-# 3. 加入所有檔案
+如果 `vercel.json` 還沒新增，執行：
+
+```bash
+git add vercel.json
+git commit -m "chore: 新增 vercel.json 部署配置"
+```
+
+### 1.2 推送到 main 分支
+
+```bash
+git push origin main
+```
+
+> 🔑 第一次推送會要求登入 GitHub：
+> - 用戶名：`JessiZxx`
+> - 密碼：使用 **Personal Access Token**（不是帳號密碼）
+> - 取得位置：GitHub → 右上角頭像 → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token
+> - 權限勾選 `repo` 即可
+
+### 1.3 驗證推送成功
+
+1. 打開瀏覽器，進入：
+   ```
+   https://github.com/JessiZxx/Anpu-s-Digital-Archive
+   ```
+2. 切到 `main` 分支
+3. 確認以下檔案都已上傳：
+   - `index.html`
+   - `vercel.json` ✅ **新檔案**
+   - `css/style.css`
+   - `js/main.js`
+   - `js/config.js`
+   - `js/githubStorage.js`
+   - `images/` 資料夾（所有背景圖）
+   - `assets/` 資料夾
+4. 等待 1-2 分鐘，訪問 GitHub Pages 確認：
+   ```
+   https://jessizxx.github.io/Anpu-s-Digital-Archive/
+   ```
+   能看到首頁的「WELCOME TO Anpu's Digital Archive」即代表成功。
+
+> ⚠️ **如果 GitHub 倉庫是空的或檔案沒上傳完成，後面 Vercel 一定失敗。**
+> 一定要等到 GitHub Pages 網址能正常顯示，再進到階段 ②。
+
+---
+
+## 📍 階段 ② Vercel 部署
+
+### 2.1 登入 Vercel
+
+1. 打開 [https://vercel.com](https://vercel.com)
+2. 點右上角 **Sign Up**（或 Log In）
+3. 選擇 **Continue with GitHub**
+4. 授權 Vercel 讀取你的 GitHub 倉庫
+
+### 2.2 匯入專案
+
+1. 登入後進入 Dashboard：https://vercel.com/dashboard
+2. 點 **Add New…** → **Project**
+3. 在「Import Git Repository」清單中找到 `JessiZxx/Anpu-s-Digital-Archive`
+4. 點旁邊的 **Import**
+
+### 2.3 配置專案（通常不用改）
+
+| 項目 | 設定值 |
+|---|---|
+| Project Name | `anpu-s-digital-archive`（可改，建議保留） |
+| Framework Preset | **Other**（純靜態網站不用選框架） |
+| Root Directory | `./`（預設） |
+| Build Command | **留空** |
+| Output Directory | **留空或填 `.`** |
+| Install Command | **留空** |
+
+> 💡 純 HTML 站不需要 Build 步驟，Vercel 會直接拿倉庫根目錄當網站根目錄。
+
+5. 點 **Deploy**
+
+### 2.4 等待部署完成
+
+- 約 30 秒 ~ 1 分鐘
+- 看到「🎉 Congratulations!」就成功了
+- Vercel 會給你一個網址，格式像這樣：
+  ```
+  https://anpu-s-digital-archive.vercel.app
+  ```
+  或
+  ```
+  https://anpu-s-digital-archive-jessizxx.vercel.app
+  ```
+
+> 🎯 **這就是你要拿來做 QR Code 的網址！**
+
+---
+
+## 📍 自動更新機制
+
+部署完成後，**以後任何修改都只要推 GitHub 就行**：
+
+```bash
 git add .
-
-# 4. 提交
-git commit -m "init: 安溥的數字藏館"
-
-# 5. 設定主分支
-git branch -M main
-
-# 6. 連接遠端
-git remote add origin https://github.com/JessiZxx/Anpu-s-Digital-Archive.git
-
-# 7. 推送（會要求輸入 GitHub 用戶名 + Token）
-git push -u origin main
+git commit -m "說明改了什麼"
+git push origin main
 ```
 
----
+Vercel 會**自動偵測**到 main 分支有新的 commit，自動重新部署（通常 30 秒內完成）。
 
-## 方案 C：使用 GitHub Desktop（最簡單，無命令列）
-
-1. 下載 [GitHub Desktop](https://desktop.github.com/)
-2. 登入 GitHub
-3. File → Add Local Repository → 選擇 `anpu-archive` 資料夾
-4. 點 **Publish repository**
-5. 在跳出視窗選擇 `JessiZxx/Anpu-s-Digital-Archive`
-6. 完成！
-
----
-
-## 開啟 GitHub Pages
-
-無論用哪個方案推送完成後：
-
-1. 前往 https://github.com/JessiZxx/Anpu-s-Digital-Archive/settings/pages
-2. **Source** 選擇：`Deploy from a branch`
-3. **Branch** 選擇：`main` / `(root)`
-4. 點 **Save**
-5. 等 1–2 分鐘重新整理頁面
-
-✅ 完成後你的網址會是：
-
+你可以隨時到這裡看部署紀錄：
 ```
-https://JessiZxx.github.io/Anpu-s-Digital-Archive/
+https://vercel.com/dashboard
+→ 點進你的專案
+→ Deployments 分頁
 ```
 
-用任何裝置（手機/平板/電腦）打開都能看到。
+每一次 push 都會產生一個新的 Deployment 編號，綠色勾勾代表成功。
 
 ---
 
-## 自訂歡迎照片
+## 📍 部署驗證清單
 
-進入首頁需要一張背景照。支援以下任一檔名：
+部署完成後，請逐項檢查：
 
-| 檔名 | 用途 |
-|------|------|
-| `assets/welcome.jpg` | 最常用 |
-| `assets/welcome.png` | PNG 格式 |
-| `assets/anpu.jpg` | 簡寫 |
-| `assets/anpu.png` | PNG 簡寫 |
-
-把照片放到 `assets/` 資料夾，**commit 並 push** 即可。
-
-或：開啟網站後，點右上加號 → 上傳照片 → 按 ★ 設為歡迎照片（僅本機有效）。
+- [ ] 開啟 `https://你的專案.vercel.app`
+- [ ] 看到首頁背景圖 + 「WELCOME TO Anpu's Digital Archive」文字
+- [ ] ENTER 按鈕在 3/4 高、2/6 寬的位置
+- [ ] 點 ENTER 進入第二頁
+- [ ] 進館按鈕在 3/4 高、1/6 第 4 格偏左的位置
+- [ ] 點進館進入 3D 球體
+- [ ] 球體可以拖曳旋轉
+- [ ] 右上角有「球覽 / 平鋪」切換
+- [ ] 切到平鋪模式可以看到 10 張預設卡片
+- [ ] 切到管理模式可以看到「＋ 上傳媒體」「＋ 新增純文字條目」按鈕
+- [ ] 點新增純文字條目，可以看到「標題 / 文字 / 簡介 / 上傳語音」四個欄位
+- [ ] 隨意重新整理頁面（F5），不會出現 404
 
 ---
 
-## 常見問題
+## 📍 常見故障排查
 
-### Q: 推送時出現 `Permission denied`
-**A:** 沒用 token。改用方案 A 或 B 的 token 方式。
+### ❌ 部署後網頁打開 404
 
-### Q: 出現 `fatal: refusing to merge unrelated histories`
-**A:** 遠端有舊檔。執行：
+**原因**：Vercel 沒找到 `index.html`（通常因為你選錯了 Root Directory）
+
+**解決**：
+1. Vercel Dashboard → 進入專案 → Settings → General
+2. 把 **Root Directory** 改成 `.` 或留空
+3. 然後到 Deployments 分頁，點最新一次部署右上角的「⋯」→ Redeploy
+
+### ❌ 圖片都破圖看不到
+
+**原因**：圖片路徑大小寫不一致，或倉庫裡少了 images 資料夾
+
+**解決**：
+1. 確認 GitHub 倉庫裡 `images/` 資料夾存在
+2. 確認圖片檔名是 `.jpg` 小寫（不是 `.JPG`）
+3. 重新推送：
+   ```bash
+   git add images/
+   git commit -m "fix: 補上圖片資源"
+   git push origin main
+   ```
+
+### ❌ 重新整理頁面出現 404
+
+**原因**：直接訪問 `vercel.app/xxx` 子路徑時 Vercel 找不到檔案
+
+**解決**：`vercel.json` 已配置 `cleanUrls: true`，把所有網址都視為單檔。**如果仍然 404**，確認 `vercel.json` 已成功推送到 main 分支。
+
+### ❌ 改了檔案但 Vercel 沒更新
+
+**原因**：本地 commit 了但沒 push，或 push 到別的分支
+
+**解決**：
 ```bash
-git pull origin main --allow-unrelated-histories
-git push -u origin main
+git branch            # 確認目前在 main
+git log --oneline -3  # 確認有新的 commit
+git push origin main  # 推送
 ```
+然後到 Vercel Dashboard → Deployments 看是否有新的構建紀錄。
 
-### Q: 推送成功但網站還是 404
-**A:** 
-1. 確認 Settings → Pages 已啟用
-2. 確認 branch 是 `main` 不是 `master`
-3. 等待 1–2 分鐘讓 GitHub 部署
+### ❌ Vercel 部署一直失敗（紅色叉叉）
 
-### Q: 想自訂網址（不要 github.io）
-**A:** 在 repo 根目錄放一個 `CNAME` 檔，內容是你的網域，然後到 DNS 設定 CNAME 指到 `JessiZxx.github.io`
+**解決**：
+1. 點進失敗的 Deployment 看錯誤訊息
+2. 多半是 `vercel.json` 語法錯誤
+3. 用 https://jsonlint.com 驗證 JSON 格式
+
+### ❌ GitHub 推送時要求輸入帳號密碼
+
+**原因**：GitHub 已不支援密碼推送，必須用 Token
+
+**解決**：
+1. 到 GitHub → Settings → Developer settings → Personal access tokens → Generate new token
+2. 勾選 `repo` 權限，產生 token
+3. 把 token 當密碼貼上
+
+或者設定記住憑證（macOS）：
+```bash
+git config --global credential.helper osxkeychain
+```
+（Windows：`git config --global credential.helper wincred`）
 
 ---
 
-## 後續更新
+## 📍 快速指令速查
 
-每次改了檔案，執行：
-
-```bash
-bash deploy.sh
-```
-
-或：
-
-```bash
-git add -A
-git commit -m "更新內容"
-git push
-```
+| 動作 | 指令 |
+|---|---|
+| 看當前狀態 | `git status` |
+| 看提交紀錄 | `git log --oneline -5` |
+| 提交所有變更 | `git add . && git commit -m "說明"` |
+| 推送到 GitHub | `git push origin main` |
+| 拉取最新 | `git pull origin main` |
 
 ---
 
-## QR Code
+## 📁 新增的部署檔案
 
-網址穩定後，到 https://www.qrcode-monkey.com/ 將網址轉成 QR Code，即可印在周邊上 🎁
+- `vercel.json` ✅（已新增到專案根目錄）
+
+未修改任何網站原始檔（HTML / CSS / JS / 圖片），完全符合「只新增部署配置」的硬性約束。
