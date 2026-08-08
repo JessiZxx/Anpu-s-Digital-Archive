@@ -16,7 +16,21 @@
   <!-- ==================== Stage 1: 珠簾 ==================== -->
   <div id="curtain-stage" class="stage stage-active">
     <canvas id="curtain-canvas"></canvas>
+    <div id="curtain-image-wrap" style="display:none;">
+      <div id="curtain-image-left"></div>
+      <div id="curtain-image-right"></div>
+      <div id="curtain-image-gap"></div>
+    </div>
     <div id="curtain-hint">← 滑動撥開珠簾 →</div>
+    <button id="curtain-upload-btn" title="上傳珠簾圖片">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="17 8 12 3 7 8" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="12" y1="3" x2="12" y2="15" stroke-linecap="round"/>
+      </svg>
+      <span>上傳珠簾</span>
+    </button>
+    <input type="file" id="curtain-file-input" accept="image/*" style="display:none;">
   </div>
 
   <!-- ==================== 黑屏過渡幕 ==================== -->
@@ -145,12 +159,11 @@
       <div class="upload-tabs">
         <button class="tab-btn active" data-tab="photo">照片</button>
         <button class="tab-btn" data-tab="text">文字</button>
-        <button class="tab-btn" data-tab="audio">語音</button>
       </div>
 
       <!-- 照片上傳 -->
       <div class="tab-pane active" data-pane="photo">
-        <p class="hint">拖拽或點擊上傳照片，將散落在球體表面</p>
+        <p class="hint">拖拽或點擊上傳照片，為每張照片取個名字，然後上傳到球體</p>
         <div class="upload-drop" id="photo-drop">
           <input type="file" id="photo-input" accept="image/*" multiple>
           <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -161,6 +174,7 @@
           <span>點擊或拖拽上傳照片</span>
         </div>
         <div class="upload-preview" id="photo-preview"></div>
+        <button class="primary-btn" id="photo-submit" style="display:none;">上傳到球體</button>
       </div>
 
       <!-- 文字上傳 -->
@@ -174,20 +188,6 @@
           <span class="rec-state" id="rec-state">未錄音</span>
         </div>
         <button class="primary-btn" id="text-submit">新增到球體</button>
-      </div>
-
-      <!-- 語音上傳 -->
-      <div class="tab-pane" data-pane="audio">
-        <p class="hint">錄製一段聲音，會顯示在球體上</p>
-        <div class="rec-controls">
-          <button class="rec-btn" id="rec-btn">
-            <span class="rec-dot"></span>
-            <span class="rec-label">開始錄音</span>
-          </button>
-          <span id="rec-timer">00:00</span>
-        </div>
-        <audio id="rec-playback" controls style="display:none;"></audio>
-        <button class="primary-btn" id="audio-submit" style="display:none;">新增到球體</button>
       </div>
 
       <!-- 資料管理 -->

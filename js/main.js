@@ -132,9 +132,14 @@ class StageManager {
   show(name) {
     if (this.current === name) return;
     this.current = name;
-    Object.values(this.stages).forEach(s => s.classList.remove('stage-active'));
+    Object.values(this.stages).forEach(s => {
+      s.classList.remove('stage-active', 'stage-entering');
+    });
     if (this.stages[name]) {
-      this.stages[name].classList.add('stage-active');
+      this.stages[name].classList.add('stage-active', 'stage-entering');
+      setTimeout(() => {
+        this.stages[name].classList.remove('stage-entering');
+      }, 900);
     }
   }
 
@@ -166,9 +171,19 @@ class CurtainStage {
     this.ctx = this.canvas.getContext('2d');
     this.stageManager = stageManager;
 
-    // Tighter, more elegant spacing like the reference
-    this.beadSize = 5;        // base bead radius
-    this.stringSpacing = 16;  // denser vertical strings
+    // 圖片模式元素
+    this.imageWrap = document.getElementById('curtain-image-wrap');
+    this.imageLeft = document.getElementById('curtain-image-left');
+    this.imageRight = document.getElementById('curtain-image-right');
+    this.imageGap = document.getElementById('curtain-image-gap');
+    this.uploadBtn = document.getElementById('curtain-upload-btn');
+    this.fileInput = document.getElementById('curtain-file-input');
+
+    this.imageMode = false;
+
+    // Canvas 珠簾參數
+    this.beadSize = 5;
+    this.stringSpacing = 16;
     this.stringCount = 0;
 
     this.isDragging = false;
@@ -186,14 +201,35 @@ class CurtainStage {
   }
 
   init() {
-    this.resize();
+    // 檢查是否有已上傳的珠簾圖片
+    const savedImage = sessionStorage.getItem('anpu-curtain-image');
+    if (savedImage) {
+      this.useImageMode(savedImage);
+    } else {
+      this.resize();
+    }
+
+    // 珠簾圖片上傳
+    this.uploadBtn.addEventListener('click', () => this.fileInput.click());
+    this.fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) this.handleCurtainUpload(e.target.files[0]);
+    });
+
     window.addEventListener('resize', () => this.resize());
 
-    this.canvas.addEventListener('mousedown', (e) => this.onDragStart(e.clientX));
+    // 拖拽事件 — canvas 和圖片模式共用
+    const dragTarget = this.imageMode ? this.imageWrap : this.canvas;
+    this.setupDragEvents(dragTarget);
+
+    this.animate();
+  }
+
+  setupDragEvents(target) {
+    target.addEventListener('mousedown', (e) => this.onDragStart(e.clientX));
     window.addEventListener('mousemove', (e) => this.onDragMove(e.clientX));
     window.addEventListener('mouseup', () => this.onDragEnd());
 
-    this.canvas.addEventListener('touchstart', (e) => {
+    target.addEventListener('touchstart', (e) => {
       e.preventDefault();
       this.onDragStart(e.touches[0].clientX);
     }, { passive: false });
@@ -202,11 +238,73 @@ class CurtainStage {
       this.onDragMove(e.touches[0].clientX);
     }, { passive: false });
     window.addEventListener('touchend', () => this.onDragEnd());
+  }
 
-    this.animate();
+  async handleCurtainUpload(file) {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const resized = await this.resizeImage(reader.result, 1920);
+      try {
+        sessionStorage.setItem('anpu-curtain-image', resized);
+      } catch (e) {
+        // sessionStorage 可能滿了，用原圖
+        console.warn('sessionStorage full, using original');
+      }
+      this.useImageMode(resized);
+    };
+    reader.readAsDataURL(file);
+    this.fileInput.value = '';
+  }
+
+  resizeImage(dataURL, maxSize) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width, height = img.height;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = height * maxSize / width;
+            width = maxSize;
+          } else {
+            width = width * maxSize / height;
+            height = maxSize;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = dataURL;
+    });
+  }
+
+  useImageMode(dataURL) {
+    this.imageMode = true;
+    this.canvas.style.display = 'none';
+    this.imageWrap.style.display = 'block';
+    this.imageLeft.style.backgroundImage = `url(${dataURL})`;
+    this.imageRight.style.backgroundImage = `url(${dataURL})`;
+    const label = this.uploadBtn.querySelector('span');
+    if (label) label.textContent = '更換珠簾';
+
+    this.w = window.innerWidth;
+    this.h = window.innerHeight;
+
+    // 重新綁定拖拽到圖片容器
+    this.setupDragEvents(this.imageWrap);
   }
 
   resize() {
+    if (this.imageMode) {
+      this.w = window.innerWidth;
+      this.h = window.innerHeight;
+      return;
+    }
+
     const dpr = Math.min(window.devicePixelRatio, 2);
     this.canvas.width = window.innerWidth * dpr;
     this.canvas.height = window.innerHeight * dpr;
@@ -226,18 +324,11 @@ class CurtainStage {
     for (let i = 0; i < this.stringCount; i++) {
       const baseX = startX + i * this.stringSpacing;
 
-      // Each string has a slightly different vertical extent and bead count
-      // to create the irregular, organic pattern in the reference
       const stringHeightRatio = randomBetween(0.85, 1.0);
-      const baseCount = Math.floor(this.h / randomBetween(38, 55));
-
-      // Distribute beads irregularly — sometimes clustered, sometimes sparse
       const beads = [];
-      let y = randomBetween(8, 30); // start with some random offset
+      let y = randomBetween(8, 30);
       while (y < this.h * stringHeightRatio) {
-        // Variable spacing creates the natural rhythm of the reference
         const gap = randomBetween(18, 70);
-        // Some beads are larger/brighter ("shining" beads in the reference)
         const isHighlight = Math.random() < 0.18;
         const sizeMul = isHighlight ? randomBetween(1.6, 2.4) : randomBetween(0.7, 1.15);
         beads.push({
@@ -247,7 +338,6 @@ class CurtainStage {
           phase: Math.random() * Math.PI * 2,
           swayAmp: randomBetween(0.4, 1.2),
           swayFreq: randomBetween(0.4, 0.9),
-          // Each string gets a subtle string-line variation
           lineAlpha: randomBetween(0.18, 0.42),
           twinkleSpeed: randomBetween(0.8, 2.2),
         });
@@ -305,7 +395,18 @@ class CurtainStage {
       if (this.bounceTime > 2.5) this.bounceActive = false;
     }
 
-    this.draw();
+    if (this.imageMode) {
+      this.updateImageTransform();
+    } else {
+      this.draw();
+    }
+  }
+
+  updateImageTransform() {
+    const partingPx = this.partingAmount * this.w * 0.4;
+    this.imageLeft.style.transform = `translateX(${-partingPx}px)`;
+    this.imageRight.style.transform = `translateX(${partingPx}px)`;
+    this.imageGap.style.width = `${partingPx * 2}px`;
   }
 
   draw() {
@@ -1194,6 +1295,7 @@ class UploadModal {
     this.photoDrop = document.getElementById('photo-drop');
     this.photoInput = document.getElementById('photo-input');
     this.photoPreview = document.getElementById('photo-preview');
+    this.photoSubmitBtn = document.getElementById('photo-submit');
     this.photoQueue = [];
 
     this.photoDrop.addEventListener('click', () => this.photoInput.click());
@@ -1211,6 +1313,9 @@ class UploadModal {
       this.handlePhotoFiles(e.dataTransfer.files);
     });
 
+    // Photo submit
+    this.photoSubmitBtn.addEventListener('click', () => this.submitPhotos());
+
     // Text upload
     this.textInput = document.getElementById('text-input');
     this.textSubmit = document.getElementById('text-submit');
@@ -1219,16 +1324,6 @@ class UploadModal {
 
     this.textSubmit.addEventListener('click', () => this.submitText());
     this.recordForText.addEventListener('click', () => this.startRecording('text'));
-
-    // Audio upload
-    this.recBtn = document.getElementById('rec-btn');
-    this.recLabel = this.recBtn.querySelector('.rec-label');
-    this.recTimer = document.getElementById('rec-timer');
-    this.recPlayback = document.getElementById('rec-playback');
-    this.audioSubmit = document.getElementById('audio-submit');
-
-    this.recBtn.addEventListener('click', () => this.startRecording('audio'));
-    this.audioSubmit.addEventListener('click', () => this.submitAudio());
 
     // Manage
     document.getElementById('export-btn').addEventListener('click', () => this.exportJSON());
@@ -1241,7 +1336,6 @@ class UploadModal {
     this.recordingTimer = null;
     this.recordedBlob = null;
     this.recordedDataURL = null;
-    this.recordContext = null; // 'text' or 'audio'
 
     this.updateStorageInfo();
   }
@@ -1268,7 +1362,7 @@ class UploadModal {
       if (!file.type.startsWith('image/')) continue;
       const dataURL = await fileToDataURL(file);
       const id = generateId();
-      const item = { id, dataURL, name: file.name };
+      const item = { id, dataURL, caption: '' };
       this.photoQueue.push(item);
       this.renderPhotoPreview();
     }
@@ -1282,11 +1376,25 @@ class UploadModal {
       div.className = 'preview-item';
       div.innerHTML = `
         <img src="${item.dataURL}" alt="">
+        <input type="text" class="caption-input" placeholder="取個名字" value="${item.caption || ''}" data-idx="${idx}">
         <button class="remove" data-idx="${idx}" title="移除">×</button>
         <button class="set-welcome" data-idx="${idx}" title="設為歡迎照片">★</button>
       `;
       this.photoPreview.appendChild(div);
     });
+
+    // Show submit button if there are photos
+    this.photoSubmitBtn.style.display = this.photoQueue.length > 0 ? 'inline-flex' : 'none';
+
+    // Caption input handler
+    this.photoPreview.querySelectorAll('.caption-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        this.photoQueue[idx].caption = e.target.value;
+      });
+      input.addEventListener('click', (e) => e.stopPropagation());
+    });
+
     this.photoPreview.querySelectorAll('.remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1328,6 +1436,29 @@ class UploadModal {
     await window.app.stageManager.blackoutHide(600);
   }
 
+  async submitPhotos() {
+    if (this.photoQueue.length === 0) {
+      alert('請先上傳照片');
+      return;
+    }
+    const userData = Storage.load();
+    for (const item of this.photoQueue) {
+      userData.photos.push({
+        id: item.id,
+        dataURL: item.dataURL,
+        caption: item.caption || '',
+      });
+    }
+    Storage.save(userData);
+
+    this.photoQueue = [];
+    this.renderPhotoPreview();
+    this.updateStorageInfo();
+    alert('已上傳 ' + (userData.photos.length) + ' 張照片到球體！');
+
+    this.refreshGlobe();
+  }
+
   async submitText() {
     const text = this.textInput.value.trim();
     if (!text) {
@@ -1336,7 +1467,7 @@ class UploadModal {
     }
     const userData = Storage.load();
     const newQuote = { id: generateId(), text };
-    if (this.recordedDataURL && this.recordContext === 'text') {
+    if (this.recordedDataURL) {
       newQuote.audio = this.recordedDataURL;
     }
     userData.quotes.push(newQuote);
@@ -1347,44 +1478,12 @@ class UploadModal {
     this.recordedBlob = null;
     this.recState.textContent = '未錄音';
     this.updateStorageInfo();
-    alert('已新增到球體！重新整理後可見。');
-
-    // Trigger globe to refresh
-    this.refreshGlobe();
-  }
-
-  async submitAudio() {
-    if (!this.recordedDataURL) {
-      alert('請先錄製語音');
-      return;
-    }
-    // For audio without text, create a quote placeholder
-    const userData = Storage.load();
-    const text = prompt('為這段語音寫一句話（顯示在球體上）：', '一段未命名的聲音');
-    if (text === null) return;
-
-    userData.quotes.push({
-      id: generateId(),
-      text: text.trim() || '一段聲音',
-      audio: this.recordedDataURL,
-    });
-    Storage.save(userData);
-
-    this.recordedDataURL = null;
-    this.recordedBlob = null;
-    this.recPlayback.style.display = 'none';
-    this.audioSubmit.style.display = 'none';
-    this.recBtn.classList.remove('recording');
-    this.recLabel.textContent = '開始錄音';
-    this.recTimer.textContent = '00:00';
-    this.updateStorageInfo();
     alert('已新增到球體！');
+
     this.refreshGlobe();
   }
 
-  async startRecording(context) {
-    this.recordContext = context;
-
+  async startRecording() {
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       this.stopRecording();
       return;
@@ -1405,22 +1504,16 @@ class UploadModal {
         this.recordedBlob = blob;
         this.recordedDataURL = await blobToDataURL(blob);
         stream.getTracks().forEach(t => t.stop());
-
-        if (this.recordContext === 'text') {
-          this.recState.textContent = '已錄音 ✓';
-        } else {
-          this.recPlayback.src = this.recordedDataURL;
-          this.recPlayback.style.display = 'block';
-          this.audioSubmit.style.display = 'inline-flex';
-        }
+        this.recState.textContent = '已錄音 ✓';
+        this.recordForText.classList.remove('recording');
       });
 
       this.mediaRecorder.start();
-      this.recBtn.classList.add('recording');
-      this.recLabel.textContent = '停止錄音';
+      this.recordForText.classList.add('recording');
+      this.recState.textContent = '錄音中...';
       this.recordingTimer = setInterval(() => {
         const elapsed = (Date.now() - this.recordingStart) / 1000;
-        this.recTimer.textContent = formatTime(elapsed);
+        this.recState.textContent = '錄音中 ' + formatTime(elapsed);
       }, 200);
     } catch (e) {
       alert('無法存取麥克風：' + e.message);
@@ -1435,8 +1528,7 @@ class UploadModal {
       clearInterval(this.recordingTimer);
       this.recordingTimer = null;
     }
-    this.recBtn.classList.remove('recording');
-    this.recLabel.textContent = '開始錄音';
+    this.recordForText.classList.remove('recording');
   }
 
   exportJSON() {
