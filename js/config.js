@@ -1,151 +1,128 @@
 /* ============================================================
-   安溥的數字藏館 · 素材配置入口
-   ------------------------------------------------------------
-   ✨ 使用方法：
-   1. 把照片放到  /photos/  資料夾（支援 .jpg .jpeg .png .webp .gif）
-   2. 把音檔放到  /assets/audio/  資料夾（支援 .mp3 .wav .ogg）
-   3. 在下方 ARCHIVE_PHOTOS / ARCHIVE_QUOTES 陣列中，按範例新增項目
-   4. 存檔重新整理網頁即可看到變更，不需要改其他程式碼
-   ============================================================ */
+ * 素材配置入口 —— 用戶可輕鬆新增照片 / 語錄
+ * 如果 localStorage 有自訂存檔 (ADAR_ITEMS_v1)，會優先加載。
+ * 音頻檔放 assets/audio/ 後，在 quotes 裡填對應路徑即可。
+ * 圖片檔放 photos/ 後，在 photos 裡填對應路徑即可。
+ * ============================================================ */
+(function () {
+  window.ARCHIVE_CONFIG = {
 
-window.ARCHIVE_CONFIG = {
+    backgrounds: {
+      // Stage 1 & 2 的背景圖（用戶原圖）
+      home:    'assets/pages/home-bg-user.jpg',
+      welcome: 'assets/pages/welcome-bg-user.jpg'
+    },
 
-  /* =============== 照片卡片 ===============
-     每個物件代表一張照片卡片，會出現在球體與平鋪視圖
-     - id:       唯一辨識字串（英文/數字，不要重複）
-     - src:      圖片路徑（建議放在 /photos/ 資料夾）
-     - title:    卡片標題（滑動/詳情頁會顯示）
-  */
-  photos: [
-    {
-      id: 'photo_001',
-      src: 'photos/sample_01.jpg',
-      title: '關於我愛你'
-    },
-    {
-      id: 'photo_002',
-      src: 'photos/sample_02.jpg',
-      title: '玫瑰色的你'
-    },
-    {
-      id: 'photo_003',
-      src: 'photos/sample_03.jpg',
-      title: '南國的孩子'
-    },
-    {
-      id: 'photo_004',
-      src: 'photos/sample_04.jpg',
-      title: '年輕時的相片'
-    },
-    {
-      id: 'photo_005',
-      src: 'photos/sample_05.jpg',
-      title: '我想你要走了'
-    },
-    {
-      id: 'photo_006',
-      src: 'photos/sample_06.jpg',
-      title: '喜歡'
-    },
-    {
-      id: 'photo_007',
-      src: 'photos/sample_07.jpg',
-      title: '城市'
-    },
-    {
-      id: 'photo_008',
-      src: 'photos/sample_08.jpg',
-      title: '人事已非'
-    },
-    {
-      id: 'photo_009',
-      src: 'photos/sample_09.jpg',
-      title: '日常'
-    },
-    {
-      id: 'photo_010',
-      src: 'photos/sample_010.jpg',
-      title: '凝視'
-    },
-    {
-      id: 'photo_011',
-      src: 'photos/sample_011.jpg',
-      title: '現場'
-    },
-    {
-      id: 'photo_012',
-      src: 'photos/sample_012.jpg',
-      title: '光影'
-    },
-  ],
+    /* -------------------------------------------------------------
+     * 照片：在 photos/ 目錄放入圖片，然後依照下方格式新增即可
+     * ----------------------------------------------------------- */
+    photos: [
+      {
+        id: 'p_001',
+        src: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
+        title: '關於我愛你'
+      },
+      {
+        id: 'p_002',
+        src: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+        title: '風塵之中'
+      },
+      {
+        id: 'p_003',
+        src: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=800&q=80',
+        title: '黑夜時'
+      },
+      {
+        id: 'p_004',
+        src: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
+        title: '不為誰而作的歌'
+      },
+      {
+        id: 'p_005',
+        src: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
+        title: '寧夏'
+      },
+      {
+        id: 'p_006',
+        src: 'https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=800&q=80',
+        title: '人間'
+      },
+      {
+        id: 'p_007',
+        src: 'https://images.unsplash.com/photo-1506863530036-1efeddceb9e4?auto=format&fit=crop&w=800&q=80',
+        title: '思念'
+      },
+      {
+        id: 'p_008',
+        src: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80',
+        title: '歲月'
+      },
+      {
+        id: 'p_009',
+        src: 'https://images.unsplash.com/photo-1485893086445-ed75865251e0?auto=format&fit=crop&w=800&q=80',
+        title: '城市夜'
+      },
+      {
+        id: 'p_010',
+        src: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=800&q=80',
+        title: '海邊'
+      },
+      {
+        id: 'p_011',
+        src: 'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=800&q=80',
+        title: '雨天'
+      },
+      {
+        id: 'p_012',
+        src: 'https://images.unsplash.com/photo-1475178622784-2e0f12018796?auto=format&fit=crop&w=800&q=80',
+        title: '微光'
+      },
+      {
+        id: 'p_013',
+        src: 'https://images.unsplash.com/photo-1520975916090-3105956dac38?auto=format&fit=crop&w=800&q=80',
+        title: '旅程'
+      },
+      {
+        id: 'p_014',
+        src: 'https://images.unsplash.com/photo-1516826957135-700dedea698c?auto=format&fit=crop&w=800&q=80',
+        title: '回家'
+      },
+      {
+        id: 'p_015',
+        src: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=800&q=80',
+        title: '時光'
+      }
+    ],
 
-  /* =============== 文字語錄卡片 ===============
-     每個物件代表一張語錄卡片
-     - id:       唯一辨識字串
-     - text:     語錄文字（會顯示在卡片上 + 彈窗內完整顯示）
-     - audio:    對應音檔路徑（可選，放在 /assets/audio/ 資料夾）
-                 若有填寫，彈窗會顯示播放按鈕
-                 若留空字串，彈窗不顯示播放按鈕
-  */
-  quotes: [
-    {
-      id: 'quote_001',
-      text: '我擁有的都是僥倖，我失去的都是人生。',
-      audio: 'assets/audio/quote_001.mp3'
-    },
-    {
-      id: 'quote_002',
-      text: '在所有人事已非的景色裡，我最喜歡你。',
-      audio: 'assets/audio/quote_002.mp3'
-    },
-    {
-      id: 'quote_003',
-      text: '你是我在這個世界上，唯一的唯一。',
-      audio: ''
-    },
-    {
-      id: 'quote_004',
-      text: '關於我愛你。',
-      audio: ''
-    },
-    {
-      id: 'quote_005',
-      text: '我想你要走了。',
-      audio: ''
-    },
-    {
-      id: 'quote_006',
-      text: '南國的孩子。',
-      audio: ''
-    },
-    {
-      id: 'quote_007',
-      text: '日子。',
-      audio: ''
-    },
-    {
-      id: 'quote_008',
-      text: '留下來，或者我跟你走。',
-      audio: ''
-    },
-    {
-      id: 'quote_009',
-      text: '如果這就是最後了，謝謝你曾經來過。',
-      audio: ''
-    },
-    {
-      id: 'quote_010',
-      text: '愛我。一次兩遍。',
-      audio: ''
-    },
-  ],
-
-  /* =============== 頁面背景圖 ===============
-     兩張首頁背景圖路徑（放在 /assets/pages/ 資料夾）
-     使用者自行替換檔案即可，不需要改這裡
-  */
-  backgrounds: {
-    home:    'assets/pages/home-bg-user.jpg',
-    welcome: 'assets/pages/welcome-bg-user.jpg'
-  }
-};
+    /* -------------------------------------------------------------
+     * 語錄：文字 + 可選音檔（放入 assets/audio/）
+     * ----------------------------------------------------------- */
+    quotes: [
+      {
+        id: 'q_001',
+        text: '我擁有的都是僥倖，我失去的都是人生。',
+        audio: ''
+      },
+      {
+        id: 'q_002',
+        text: '你要按你所想的去生活，否則，你遲早會按你所生活的去想。',
+        audio: ''
+      },
+      {
+        id: 'q_003',
+        text: '愛我。一次兩遍。',
+        audio: ''
+      },
+      {
+        id: 'q_004',
+        text: '最深的黑暗，往往來自最閃亮的記憶。',
+        audio: ''
+      },
+      {
+        id: 'q_005',
+        text: '我們終將失散，而我還在想，我是否曾以愛，為你命名。',
+        audio: ''
+      }
+    ]
+  };
+})();

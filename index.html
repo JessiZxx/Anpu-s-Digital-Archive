@@ -10,39 +10,41 @@
 </head>
 <body>
 
-  <!-- ============ 全站統一：流動點狀波紋背景層 ============ -->
-  <div class="ripple-bg" aria-hidden="true"></div>
-
   <!-- Loading -->
   <div id="loading-indicator">
     <span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
   </div>
 
-  <!-- Transition wipe (頁面切換黑幕) -->
+  <!-- Transition wipe -->
   <div id="trans-wipe" class="trans-wipe"></div>
 
-  <!-- ==================== Stage 1: 首頁啟動頁 ==================== -->
+  <!-- ==================== Stage 1: 首頁啟動頁 ====================
+       用戶的圖本身就已包含 WELCOME / 標題 / 進館按鈕 完整視覺。
+       我們什麼都不畫，只放：(1) 背景圖  (2) 全頁透明熱區 -->
   <div id="home-stage" class="stage stage-active">
-    <div class="page-bg" id="home-bg" style="background-image: url('assets/pages/home-bg-user.jpg');"></div>
-    <!-- 進館按鈕：底部中央 -->
-    <button type="button" class="enter-btn" id="home-enter-btn">進館</button>
+    <div class="page-bg" id="home-bg"
+         style="background-image: url('assets/pages/home-bg-user.jpg');"></div>
     <a href="javascript:void(0)" id="home-hotzone" class="fullscreen-hotzone" title="進入"></a>
   </div>
 
-  <!-- ==================== Stage 2: 過渡引導頁 ==================== -->
+  <!-- ==================== Stage 2: 過渡引導頁 ====================
+       用戶的圖本身已包含人像 + "愛我。一次兩遍。" + 右下角"進館"按鈕。
+       我們什麼都不畫，只放：(1) 背景圖  (2) 全頁透明熱區 -->
   <div id="welcome-stage" class="stage">
-    <div class="page-bg" id="welcome-bg" style="background-image: url('assets/pages/welcome-bg-user.jpg');"></div>
-    <!-- 進館按鈕：右下角（對應圖 2 位置） -->
-    <button type="button" class="enter-btn" id="welcome-enter-btn">進館</button>
+    <div class="page-bg" id="welcome-bg"
+         style="background-image: url('assets/pages/welcome-bg-user.jpg');"></div>
     <a href="javascript:void(0)" id="enter-hotzone" class="fullscreen-hotzone" title="進入藏館"></a>
   </div>
 
   <!-- ==================== Stage 3: 核心展廳 3D 球體 ==================== -->
   <div id="globe-stage" class="stage">
-    <!-- 3D 球體容器 -->
+
+    <!-- 球體頁面的漣漪點陣背景 (CSS) -->
+    <div class="ripple-bg" aria-hidden="true"></div>
+
     <div id="globe-container"></div>
 
-    <!-- 平鋪視圖容器 -->
+    <!-- 平鋪視圖 -->
     <div id="flat-container" class="flat-container hidden">
       <div id="flat-track" class="flat-track"></div>
     </div>
@@ -59,10 +61,17 @@
       <button class="globe-tab active" data-mode="sphere">球覽</button>
       <button class="globe-tab" data-mode="flat">平鋪</button>
     </div>
+
+    <!-- 上傳按鈕 (+) -->
+    <button id="add-button" title="上傳內容">
+      <svg viewBox="0 0 24 24" width="22" height="22">
+        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
   </div>
 
   <!-- ==================== Detail Panel (彈窗) ==================== -->
-  <!-- 照片彈窗 / 語錄彈窗通用 -->
   <div id="detail-panel" class="detail-panel">
     <div id="detail-backdrop" class="detail-backdrop"></div>
     <div class="detail-content">
@@ -74,29 +83,43 @@
         </svg>
       </button>
 
-      <!-- 照片區（語錄卡片時此區隱藏） -->
       <div id="detail-img" class="detail-img-wrap">
         <img id="detail-img-el" src="" alt="" draggable="false">
       </div>
 
-      <!-- 文字區 -->
       <div id="detail-content" class="detail-text">
         <div class="dp-cat">球覽</div>
         <h2 class="dp-title">標題</h2>
         <p class="dp-body"></p>
       </div>
 
-      <!-- 音頻播放器（僅有音檔的語錄卡片顯示） -->
+      <!-- 編輯 / 刪除按鈕 -->
+      <div class="detail-actions">
+        <button id="detail-edit" class="detail-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 20h9" stroke-linecap="round"/>
+            <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          編輯標題
+        </button>
+        <button id="detail-delete" class="detail-btn danger">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polyline points="3 6 5 6 21 6" stroke-linecap="round"/>
+            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          刪除
+        </button>
+      </div>
+      <div id="detail-title-editor" class="title-editor">
+        <input id="detail-title-input" type="text" placeholder="輸入新標題">
+        <button id="detail-save-title">儲存</button>
+      </div>
+
+      <!-- 音頻播放器 (僅語錄有 audio 欄位時顯示) -->
       <div id="detail-audio" class="detail-audio" style="display:none;">
         <button id="audio-play-btn" class="audio-play-btn" aria-label="播放錄音">
-          <!-- 播放 icon -->
-          <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-          <!-- 暫停 icon（預設隱藏） -->
-          <svg id="icon-pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:none;">
-            <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
-          </svg>
+          <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="icon-pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" style="display:none;"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
         </button>
         <div class="audio-progress">
           <span id="audio-cur">0:00</span>
@@ -108,18 +131,65 @@
     </div>
   </div>
 
-  <!-- 隱藏的音頻元素（動態設定 src） -->
+  <!-- 隱藏音頻元素 -->
   <audio id="archive-audio" preload="none"></audio>
 
-  <footer id="site-footer">
-    <p>ANPU'S DIGITAL ARCHIVE</p>
-  </footer>
+  <!-- ==================== 上傳面板 ==================== -->
+  <div id="upload-modal" class="modal">
+    <div class="modal-backdrop"></div>
+    <div class="upload-panel">
+
+      <button id="upload-close" class="upload-close" aria-label="關閉">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <h2>上傳到藏館</h2>
+
+      <div class="upload-tabs">
+        <button class="tab-btn active" data-tab="photo">照片</button>
+        <button class="tab-btn" data-tab="text">文字 / 語錄</button>
+      </div>
+
+      <!-- 照片頁籤 -->
+      <div class="tab-pane active" data-pane="photo">
+        <p class="hint">選擇本機照片檔（支援多選），輸入標題後儲存到瀏覽器本地</p>
+        <label class="upload-drop" id="photo-drop">
+          <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="5" width="18" height="14" rx="1.5"/>
+            <circle cx="8.5" cy="10.5" r="1.5"/>
+            <path d="M21 16l-5-5-9 9" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>點擊選擇照片（可多選）</span>
+        </label>
+        <div class="upload-preview" id="photo-preview"></div>
+        <button class="primary-btn" id="photo-submit" style="display:none;">新增到球體</button>
+      </div>
+
+      <!-- 文字頁籤 -->
+      <div class="tab-pane" data-pane="text">
+        <p class="hint">寫下一段文字或語錄（可選：對應音檔），儲存到瀏覽器本地</p>
+        <textarea id="text-input" placeholder="我想說的話..."></textarea>
+        <div class="audio-upload-row">
+          <label class="audio-file-label">
+            <input type="file" id="text-audio-input" accept="audio/*" style="display:none;">
+            <span id="text-audio-name">＋ 配對錄音檔（可選）</span>
+          </label>
+        </div>
+        <button class="primary-btn" id="text-submit">新增到球體</button>
+      </div>
+
+    </div>
+  </div>
+
+  <footer id="site-footer"><p>ANPU'S DIGITAL ARCHIVE</p></footer>
 
   <!-- ============== Scripts ============== -->
-  <!-- 素材配置入口（在此檔新增照片 / 語錄 / 音檔） -->
   <script src="js/config.js"></script>
 
-  <!-- Three.js（框架 CDN，非「爬蟲/外部資源拉取」用途） -->
   <script type="importmap">
   {
     "imports": {
@@ -128,10 +198,8 @@
   }
   </script>
 
-  <!-- 主程式 -->
-  <script type="module" src="js/main.js?v=20260808b"></script>
+  <script type="module" src="js/main.js?v=20260808c"></script>
 
-  <!-- 兜底：DOM 就緒後若主模組尚未隱藏載入指示器，主動隱藏 -->
   <script>
     (function(){
       function hide(){
